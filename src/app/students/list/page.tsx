@@ -812,7 +812,7 @@ export default function StudentsListPage() {
 
   // Soft-delete student handler
   const handleDeleteStudent = async (studentId: number) => {
-    const student = admittedStudents.find(s => s.id === studentId);
+    const student = [...enrolledStudents, ...admittedStudents].find(s => s.id === studentId);
     if (!student) return;
 
     const confirmed = await confirmAction(
@@ -1587,6 +1587,9 @@ export default function StudentsListPage() {
                               <Link href={`/students/${student.id}/fees`} title="Fees ledger" className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-slate-400 hover:text-emerald-600 transition-colors">
                                 <DollarSign className="w-3.5 h-3.5" />
                               </Link>
+                              <button onClick={() => handleDeleteStudent(student.id)} title="Soft delete" className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </>
                           ) : (
                             <div className="flex items-center gap-1">
