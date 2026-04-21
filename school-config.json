@@ -1,0 +1,66 @@
+{
+  "school": {
+    "name": "Ibun Baz Girls Secondary School",
+    "shortName": "IBUN BAZ",
+    "fullName": "Ibun Baz Girls Secondary School",
+    "address": "Busei, Iganga along Iganga-Tororo highway",
+    "city": "Iganga",
+    "country": "Uganda",
+    "contact": {
+      "phone": "+256 700 123 456",
+      "email": "info@ibunbaz.ac.ug",
+      "fax": "+256 (0) 434 123 456"
+    },
+    "principal": {
+      "name": "Hassan Muhammad Mwaita",
+      "title": "Director"
+    },
+    "branding": {
+      "logo": "/uploads/logo.png",
+      "motto": "Excellence in Islamic and Academic Education",
+      "colors": {
+        "primary": "#6366f1",
+        "secondary": "#ec4899",
+        "accent": "#8b5cf6"
+      }
+    },
+    "academic": {
+      "founded": 2015,
+      "registrationNumber": "IBB-2015-001234",
+      "type": "Secondary School",
+      "gender": "Girls",
+      "curriculum": ["Secular", "Islamic (Tahfiz)"]
+    },
+    "operational": {
+      "schoolId": 1,
+      "timezone": "EAT",
+      "currency": "UGX",
+      "language": "English",
+      "status": "active"
+    },
+    "bankDetails": {
+      "bankName": "Stanbic Bank Uganda",
+      "accountNumber": "0123456789",
+      "accountName": "Ibun Baz Girls Secondary School",
+      "swiftCode": "SBICUGKX",
+      "branchCode": "001"
+    },
+    "policies": {
+      "admissionRequirements": [
+        "Complete and submit all required documentation",
+        "Payment of admission fees as per school fee structure",
+        "Medical examination and vaccination records",
+        "Previous school records and transcripts (if applicable)",
+        "Passport-size photographs (4 copies)",
+        "Copy of birth certificate or identification documents"
+      ],
+      "schoolPolicies": [
+        "Regular attendance and punctuality are mandatory",
+        "Adherence to school dress code and conduct policies",
+        "Respect for Islamic values and academic excellence",
+        "Active participation in both secular and religious studies",
+        "Payment of fees as per agreed schedule"
+      ]
+    }
+  }
+}

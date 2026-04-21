@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --color-primary: #2563eb;
+  --gradient-from: #f9fafb;
+  --gradient-to: #dbeafe;
+  --font-scale: 1;
+  --glass-blur: 12px;
+  --glass-bg: hsla(0,0%,100%,0.15);
+  --glass-border: 1px solid rgba(255,255,255,0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html[data-theme-mode='dark'] {
+  --gradient-from: #0f172a;
+  --gradient-to: #172554;
+}
+
+/* ─── Global horizontal overflow guard ──────────────────────────────────────
+   Prevents any element from causing horizontal scroll.
+   Tables, long strings, and media are safely clipped inside their containers.
+   ─────────────────────────────────────────────────────────────────────────── */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  word-break: break-word;
+}
+
+/* ─── Tables: scrollable inside their own container ─────────────────────── */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* Images never overflow */
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+
+
+/* RTL Support */
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="rtl"] .rtl\:space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+html[dir="rtl"] .rtl\:mr-auto {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+html[dir="rtl"] .rtl\:ml-auto {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+html[dir="rtl"] .rtl\:text-right {
+  text-align: right;
+}
+
+html[dir="rtl"] .rtl\:text-left {
+  text-align: left;
+}
+
+/* Custom scrollbar */
+.custom-scroll::-webkit-scrollbar { width: 6px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb { background: linear-gradient(var(--gradient-from), var(--gradient-to)); border-radius: 999px; }
+
+.glass-panel { backdrop-filter: blur(var(--glass-blur)); background: var(--glass-bg); border: var(--glass-border); }
+
+[data-sidebar][data-collapsed='true'] { --sidebar-width: 5rem; }
+
+.fade-enter { opacity: 0; }
+.fade-enter-active { opacity: 1; transition: opacity .3s; }

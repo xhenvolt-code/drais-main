@@ -1,0 +1,2110 @@
+'use client';
+
+import React, { useEffect, useMemo, useState, createContext, useContext, useRef } from 'react';
+import Image from 'next/image'; // kept for possible legacy use
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
+import PromotionSummaryNotification from '@/components/academics/PromotionSummaryNotification';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import type { ReportLayoutJSON } from '@/lib/reportTemplates';
+import { DEFAULT_TEMPLATE_JSON } from '@/lib/reportTemplates';
+import DualCurriculumTemplate from '@/templates/DualCurriculumTemplate';
+import { getSubjectName } from '@/templates/DualCurriculumTemplate';
+import { DRCEDocumentRenderer } from '@/components/drce/DRCEDocumentRenderer';
+import type { DRCEDocument, DRCEDataContext } from '@/lib/drce/schema';
+import type { DRCERenderContext } from '@/components/drce/types';
+
+// Type definitions
+interface Student {
+  student_id: number;
+  photo?: string | null;
+  admission_no: string;
+  first_name: string;
+  last_name: string;
+  class_name: string;
+  class_id?: string | number; // Added class_id as optional
+  gender?: string;
+  stream_name?: string;
+  results: Result[];
+  totalMarks?: number;
+  averageMarks?: number;
+  subjectCount?: number;
+  position?: number;
+  totalInClass?: number;
+  class_teacher_comment?: string;
+  dos_comment?: string;
+  headteacher_comment?: string;
+}
+
+interface Result {
+  student_id: number;
+  subject_id: number;
+  subject_name: string;
+  /** Arabic subject name — populated from subjects.name_ar when available */
+  name_ar?: string;
+  teacher_name?: string;
+  score: number;
+  result_type_name?: string;
+  results_type?: string;
+  term?: string;
+  term_name?: string;
+  academic_year_id?: number;
+  academic_year_name?: string;
+  class_name: string;
+  photo_url?: string;
+  admission_no: string;
+  first_name: string;
+  last_name: string;
+  gender?: string;
+  stream_name?: string;
+  subject_type?: string;
+  mid_term_score?: number;
+  end_term_score?: number;
+  teacher_initials?: string;
+  class_id?: number;
+}
+
+interface ClassGroup {
+  className: string;
+  students: Student[];
+}
+
+interface GroupedResult {
+  subject_name: string;
+  name_ar?: string;
+  teacher_name?: string;
+  midTermScore: number | null;
+  endTermScore: number | null;
+  regularScore: number | null;
+  subject_type?: string; // Add subject type
+}
+
+interface Filters {
+  term: string;
+  resultType: string;
+  classId: string;
+  student: string;
+  academicYearId: string;
+}
+
+interface AcademicYear {
+  id: number;
+  name: string;
+  status: string;
+}
+
+interface Term {
+  id: number;
+  name: string;
+  academic_year_id: number;
+}
+
+interface TeacherInitialsContextType {
+  teacherInitials: Record<string, string>;
+  handleInitialsChange: (classId: string, subjectId: string, newInitials: string) => void;
+}
+
+interface CustomizationRef {
+  current: Record<string, unknown>;
+}
+
+interface SchoolInfo {
+  name: string;
+  address: string;
+  po_box: string;
+  logo_url: string;
+  contact: string;
+  email: string;
+  website: string;
+  motto: string;
+  center_no: string;
+  registration_no: string;
+  arabic_name: string;
+  arabic_address: string;
+  arabic_po_box: string;
+  arabic_contact: string;
+  arabic_center_no: string;
+  arabic_registration_no: string;
+  arabic_motto: string;
+}
+
+interface ApiResponse {
+  students?: Student[];
+  results?: Result[];
+  data?: Result[];
+}
+
+// Context for syncing teacher initials
+const TeacherInitialsContext = createContext<TeacherInitialsContextType | null>(null);
+
+// Add a PHP API base like in ResultTypesManager to avoid hitting a non-existent Next.js API route
+const API_BASE = process.env.NEXT_PUBLIC_PHP_API_BASE || 'http://localhost/drais/api';
+
+const ReportsPage = () => {
+  const [filters, setFilters] = useState<Filters>({ term: '', resultType: '', classId: '', student: '', academicYearId: '' });
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [termsData, setTermsData] = useState<Term[]>([]);
+  const [allResults, setAllResults] = useState<Result[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [showCustomization, setShowCustomization] = useState(false);
+  const [customTab, setCustomTab] = useState('school');
+  const [loading, setLoading] = useState(false);
+  const [editableTermValue, setEditableTermValue] = useState<string>('');
+  const [isEditingTerm, setIsEditingTerm] = useState(false);
+  const [teacherInitials, setTeacherInitials] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [nextTermBegins, setNextTermBegins] = useState('');
+  const [enableMarkConversion, setEnableMarkConversion] = useState(false);
+  const defaultLogoInputRef = useRef<HTMLInputElement>(null);
+  const [defaultLogoUploading, setDefaultLogoUploading] = useState(false);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({
+    name: '',
+    address: '',
+    po_box: '',
+    logo_url: '/uploads/logo.png',
+    contact: '',
+    email: '',
+    website: '',
+    motto: '',
+    center_no: '',
+    registration_no: '',
+    arabic_name: '', arabic_address: '', arabic_po_box: '',
+    arabic_contact: '', arabic_center_no: '', arabic_registration_no: '',
+    arabic_motto: '',
+  });
+  const customizationRef = useRef<CustomizationRef>({ current: {} });
+
+  // ── Logo upload handler: uploads to Cloudinary, saves to DB, updates local state
+  const handleLogoUpload = async (file: File): Promise<string | null> => {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('folder', 'drais/logos');
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: form });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success || !uploadData.url) return null;
+
+      // Persist to DB via school-config
+      await fetch('/api/school-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logo: uploadData.url }),
+      });
+
+      // Update local state so all reports on the page reflect the new logo
+      setSchoolInfo(prev => ({ ...prev, logo_url: uploadData.url }));
+      return uploadData.url;
+    } catch (err) {
+      console.error('Logo upload failed:', err);
+      return null;
+    }
+  };
+
+  // ── Template engine: active layout JSON loaded from /api/report-templates/active
+  const [activeLayout, setActiveLayout] = useState<ReportLayoutJSON>(DEFAULT_TEMPLATE_JSON);
+
+  // ── Template switching (Phase 1 & 8)
+  // Registry keys: 'default' | 'arabic' | 'dual' | 'default-clone' | 'arabic-clone' | 'drce'
+  const templateRegistry = {
+    default: 'default',
+    arabic: 'arabic',
+    dual: 'dual',
+    'default-clone': 'default-clone',
+    'arabic-clone': 'arabic-clone',
+    drce: 'drce',
+  } as const;
+  type TemplateKey = keyof typeof templateRegistry;
+
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey>('default');
+  const [activeDrceDoc, setActiveDrceDoc] = useState<DRCEDocument | null>(null);
+  const [curriculum, setCurriculum] = useState<'all' | 'secular' | 'theology'>('all');
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'ar'>('en');
+
+  useEffect(() => {
+    fetch('/api/report-templates/active')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.template?.layout_json?.page) {
+          setActiveLayout(data.template.layout_json);
+        }
+      })
+      .catch(() => { /* keep default */ });
+  }, []);
+
+  // ── Fetch the active DRCE / Kitchen template for this school
+  useEffect(() => {
+    fetch('/api/dvcf/active?type=report_card')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.document) {
+          setActiveDrceDoc(data.document as DRCEDocument);
+          // Auto-select the DRCE template so it is used immediately
+          setSelectedTemplate('drce');
+        }
+      })
+      .catch(() => { /* no active DRCE doc */ });
+  }, []);
+
+  // Phase 8: log template + curriculum on every switch
+  useEffect(() => {
+    const resolved = templateRegistry[selectedTemplate] ?? 'default';
+    console.log('Rendering template:', resolved, '| curriculum:', curriculum);
+  }, [selectedTemplate, curriculum]);
+
+  // Helper to get term ID (you may need to adjust based on your database)
+  const getTermId = (termName: string): string => {
+    const termMap: Record<string, string> = { 'Term 1': '1', 'Term 2': '2', 'Term 3': '3' };
+    return termMap[termName] || '1';
+  };
+
+  // Fetch promotion data if it's 3rd term
+  const { data: promotionData } = useSWR(
+    filters.term === 'Term 3' && filters.classId
+      ? `/api/academics/promotions?term_id=${getTermId(filters.term)}&class_id=${filters.classId}`
+      : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  const handlePromoteStudents = async (studentIds: number[], newClassId: number) => {
+    try {
+      const response = await fetch('/api/academics/promotions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentIds, newClassId, remarks: 'Promoted from 3rd term reports' }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert(`Successfully promoted ${studentIds.length} student(s)!`);
+      } else {
+        alert('Failed to promote students: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error promoting students:', error);
+      alert('Error promoting students');
+    }
+  };
+
+  // School info default — generic placeholders that get overridden by DB-driven API
+  const schoolInfoDefault: SchoolInfo = {
+    name: '', address: '', po_box: '',
+    logo_url: '/uploads/logo.png',
+    contact: '', email: '', website: '', motto: '',
+    center_no: '', registration_no: '',
+    arabic_name: '', arabic_address: '', arabic_po_box: '',
+    arabic_contact: '', arabic_center_no: '', arabic_registration_no: '',
+    arabic_motto: '',
+  };
+
+  // Add Arabic-Indic digits converter (strip dash characters before mapping)
+  const toArabicDigits = (input?: string | number | null): string => {
+    if (input === null || input === undefined) return '';
+    const s = String(input);
+    // Remove common dash-like characters before converting digits
+    const cleaned = s.replace(/[-–—‑]/g, '');
+    const map: Record<string, string> = {
+      '0': '٠','1': '١','2': '٢','3': '٣','4': '٤',
+      '5': '٥','6': '٦','7': '٧','8': '٨','9': '٩'
+    };
+    return cleaned.replace(/[0-9]/g, d => map[d]);
+  };
+
+  // Fetch academic years, terms, persisted initials and next-term date on mount
+  useEffect(() => {
+    fetch('/api/academic_years')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.data) setAcademicYears(data.data);
+      })
+      .catch(() => {});
+    fetch('/api/terms')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.data) setTermsData(data.data);
+      })
+      .catch(() => {});
+    fetch('/api/teacher-initials')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.success && data.data && typeof data.data === 'object') {
+          setTeacherInitials(data.data);
+        }
+      })
+      .catch(() => {});
+    fetch('/api/next-term')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.data?.nextTermBegins) {
+          setNextTermBegins(data.data.nextTermBegins);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Filtered terms based on selected academic year
+  const filteredTerms = filters.academicYearId
+    ? termsData.filter(t => String(t.academic_year_id) === filters.academicYearId)
+    : termsData;
+
+  useEffect(() => {
+    setLoading(true);
+    // Build query params for report fetch
+    const reportParams = new URLSearchParams();
+    if (filters.academicYearId) reportParams.set('academic_year_id', filters.academicYearId);
+    const reportUrl = `/api/reports/list${reportParams.toString() ? '?' + reportParams.toString() : ''}`;
+    // Use new DB (Next.js API)
+    Promise.all([
+      fetch(reportUrl)
+        .then(async r => {
+          const data: ApiResponse = await r.json().catch(() => ({}));
+          return data;
+        }),
+      fetch(`/api/school-config`)
+        .then(async r => {
+          const data = await r.json().catch(() => ({}));
+          return data;
+        })
+    ])
+      .then(([reportsData, schoolConfigData]) => {
+        const students = reportsData?.students || [];
+        const results = reportsData?.results || reportsData?.data || (Array.isArray(reportsData) ? reportsData as Result[] : []);
+        setAllStudents(students);
+        setAllResults(results);
+        
+        // Update school info from centralized DB-driven config
+        if (schoolConfigData?.school) {
+          const s = schoolConfigData.school;
+          setSchoolInfo({
+            name: s.name || schoolInfoDefault.name,
+            address: s.address || schoolInfoDefault.address,
+            po_box: s.po_box || schoolInfoDefault.po_box,
+            logo_url: s.branding?.logo || s.logo_url || schoolInfoDefault.logo_url,
+            contact: s.contact?.phone || schoolInfoDefault.contact,
+            email: s.contact?.email || schoolInfoDefault.email,
+            website: s.website || schoolInfoDefault.website,
+            motto: s.branding?.motto || schoolInfoDefault.motto,
+            center_no: s.center_no || schoolInfoDefault.center_no,
+            registration_no: s.registration_no || schoolInfoDefault.registration_no,
+            arabic_name: s.arabic_name || schoolInfoDefault.arabic_name,
+            arabic_address: s.arabic_address || schoolInfoDefault.arabic_address,
+            arabic_po_box: s.arabic_po_box || schoolInfoDefault.arabic_po_box,
+            arabic_contact: s.arabic_phone || s.contact?.phone || schoolInfoDefault.arabic_contact,
+            arabic_center_no: s.arabic_center_no || s.center_no || schoolInfoDefault.arabic_center_no,
+            arabic_registration_no: s.arabic_registration_no || s.registration_no || schoolInfoDefault.arabic_registration_no,
+            arabic_motto: s.arabic_motto || schoolInfoDefault.arabic_motto,
+          });
+        }
+      })
+      .catch(() => {
+        setAllStudents([]);
+        setAllResults([]);
+      })
+      .finally(() => setLoading(false));
+  }, [filters.academicYearId]);
+
+  // Load editable term value from localStorage on mount
+  useEffect(() => {
+    const savedTermValue = localStorage.getItem('editable_term_value');
+    if (savedTermValue) {
+      setEditableTermValue(savedTermValue);
+    }
+  }, []);
+
+  // Save editable term value to localStorage when it changes
+  useEffect(() => {
+    if (editableTermValue) {
+      localStorage.setItem('editable_term_value', editableTermValue);
+    }
+  }, [editableTermValue]);
+
+  // Enhanced class groups with data validation and error checking
+  const classGroups = useMemo((): Record<string, ClassGroup> => {
+    const groups: Record<string, ClassGroup> = {};
+    
+    // Filter out invalid results and remove duplicates
+    const validResults = allResults.filter((r, index, arr) => {
+      // Basic validation
+      if (!r.student_id || !r.class_name || r.score === null || r.score === undefined) {
+        return false;
+      }
+      
+      // Ensure score is a valid number
+      const score = parseFloat(String(r.score));
+      if (isNaN(score)) return false;
+      
+      // Remove duplicates based on unique combination
+      const key = `${r.student_id}_${r.subject_id}_${r.result_type_name || r.results_type}_${r.term || r.term_name || 'no_term'}`;
+      const firstIndex = arr.findIndex(item => {
+        const itemKey = `${item.student_id}_${item.subject_id}_${item.result_type_name || item.results_type}_${item.term || item.term_name || 'no_term'}`;
+        return itemKey === key;
+      });
+      return firstIndex === index;
+    });
+
+    validResults.forEach(r => {
+      const className = r.class_name || 'Unknown Class';
+      if (!groups[className]) {
+        groups[className] = { className, students: [] };
+      }
+      
+      let student = groups[className].students.find(s => s.student_id === r.student_id);
+      if (!student) {
+        // Improved photo URL handling for Next.js Image component
+        const photoUrl = r.photo_url;
+
+        student = {
+          student_id: r.student_id,
+          photo: photoUrl,
+          admission_no: r.admission_no,
+          first_name: r.first_name,
+          last_name: r.last_name,
+          class_name: r.class_name,
+          gender: r.gender,
+          stream_name: r.stream_name,
+          results: [],
+        };
+        groups[className].students.push(student);
+      }
+      student.results.push(r);
+    });
+    
+    // Sort students within each class by name
+    Object.values(groups).forEach(g => {
+      g.students.sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+    });
+    
+    return groups;
+  }, [allResults]);
+
+  // Enhanced filtering logic with better validation
+  const filteredClassGroups = useMemo((): Record<string, ClassGroup> => {
+    let groups = JSON.parse(JSON.stringify(classGroups)) as Record<string, ClassGroup>; // Deep clone to avoid mutations
+    
+    if (filters.classId) {
+      groups = Object.fromEntries(
+        Object.entries(groups).filter(([_, v]) =>
+          String(v.className).toLowerCase() === String(filters.classId).toLowerCase() ||
+          v.students.some(s => String(s.class_name).toLowerCase() === String(filters.classId).toLowerCase())
+        )
+      );
+    }
+    
+    Object.values(groups).forEach(g => {
+      g.students = g.students.filter(s => {
+        // Ensure student has valid results
+        if (!s.results || s.results.length === 0) return false;
+        
+        // Term filter - only apply if term data exists
+        if (filters.term) {
+          const hasTermData = s.results.some((r: Result) => r.term || r.term_name);
+          if (hasTermData) {
+            const matchesTerm = s.results.some((r: Result) =>
+              String(r.term || r.term_name || '').toLowerCase() === filters.term.toLowerCase()
+            );
+            if (!matchesTerm) return false;
+          }
+        }
+        
+        // Result type filter - IMPROVED LOGIC
+        if (filters.resultType) {
+          const resultTypeFilter = filters.resultType.toLowerCase();
+          
+          if (resultTypeFilter.includes('end')) {
+            // For "End of Term" filter, include students who have:
+            // 1. Any result with "end" in the result type, OR
+            // 2. Both mid-term and end-term results (for complete End of Term reports)
+            const hasEndTermResult = s.results.some((r: Result) =>
+              String(r.result_type_name || r.results_type || '').toLowerCase().includes('end')
+            );
+            
+            const hasMidTermResult = s.results.some((r: Result) =>
+              String(r.result_type_name || r.results_type || '').toLowerCase().includes('mid')
+            );
+            
+            // Include if has end-term results OR has both mid and end components
+            if (!hasEndTermResult && !hasMidTermResult) return false;
+          } else {
+            // For other result types, exact match
+            const matchesResultType = s.results.some((r: Result) =>
+              String(r.result_type_name || r.results_type || '').toLowerCase() === resultTypeFilter
+            );
+            if (!matchesResultType) return false;
+          }
+        }
+        
+        // Student name/ID filter
+        if (filters.student) {
+          const name = `${s.first_name} ${s.last_name}`.toLowerCase();
+          if (!name.includes(filters.student.toLowerCase()) && String(s.student_id) !== filters.student) {
+            return false;
+          }
+        }
+        
+        return true;
+      });
+    });
+    
+    // Remove empty classes
+    groups = Object.fromEntries(Object.entries(groups).filter(([_, v]) => v.students.length > 0));
+    return groups;
+  }, [classGroups, filters]);
+
+  // Helper: check if a single result row matches current filters - IMPROVED
+  const matchesFilters = (r: Result): boolean => {
+    if (filters.resultType) {
+      const rt = String(r.result_type_name || r.results_type || '').toLowerCase();
+      const filterType = filters.resultType.toLowerCase();
+      
+      if (filterType.includes('end')) {
+        // For End of Term filter, include both mid and end results
+        return rt.includes('mid') || rt.includes('end');
+      } else {
+        // For other filters, exact match
+        return rt === filterType;
+      }
+    }
+    if (filters.term) {
+      const term = String(r.term || r.term_name || '').toLowerCase();
+      if (term !== filters.term.toLowerCase()) return false;
+    }
+    return true;
+  };
+
+  // Enhanced class-based positioning with proper per-class ranking
+  const classGroupsWithPositions = useMemo((): Record<string, ClassGroup> => {
+    const groups: Record<string, ClassGroup> = JSON.parse(JSON.stringify(filteredClassGroups));
+
+    // Process each class independently for proper class-based positioning
+    Object.values(groups).forEach((classGroup: ClassGroup) => {
+      // Filter results per student based on current filters
+      classGroup.students.forEach((student: Student) => {
+        student.results = (student.results || []).filter((r: Result) => {
+          // Validate result data
+          if (!r.score || isNaN(parseFloat(String(r.score)))) return false;
+          return matchesFilters(r);
+        });
+      });
+       
+      // Remove students with no valid results after filtering
+      classGroup.students = classGroup.students.filter((s: Student) => s.results && s.results.length > 0);
+      
+      // Calculate total marks for each student in this class
+      classGroup.students.forEach((student: Student) => {
+        const validScores = (student.results || [])
+          .map((r: Result) => parseFloat(String(r.score || 0)))
+          .filter(score => !isNaN(score) && score >= 0);
+        
+        student.totalMarks = validScores.reduce((sum, score) => sum + score, 0);
+        student.averageMarks = validScores.length > 0 ? Math.round(student.totalMarks / validScores.length) : 0;
+        student.subjectCount = validScores.length;
+      });
+      
+      // Sort students by total marks within this class (highest first)
+      classGroup.students.sort((a: Student, b: Student) => {
+        const totalA = a.totalMarks || 0;
+        const totalB = b.totalMarks || 0;
+        if (totalB !== totalA) return totalB - totalA;
+        
+        // If total marks are equal, sort by average
+        const avgA = a.averageMarks || 0;
+        const avgB = b.averageMarks || 0;
+        if (avgB !== avgA) return avgB - avgA;
+        
+        // If still equal, sort by name
+        return (a.last_name || '').localeCompare(b.last_name || '');
+      });
+      
+      // Assign positions within this class only
+      classGroup.students.forEach((student: Student, index: number) => {
+        student.position = index + 1;
+        student.totalInClass = classGroup.students.length; // Class-specific total
+      });
+    });
+
+    // Remove classes that have no students after processing
+    Object.keys(groups).forEach((className) => {
+      if (!groups[className].students.length) {
+        delete groups[className];
+      }
+    });
+
+    return groups;
+  }, [filteredClassGroups, filters.term, filters.resultType]);
+
+  // Helper to split results into principal and other subjects
+  function splitSubjects(results: any[]) {
+    const principal: any[] = [];
+    const others: any[] = [];
+    results.forEach(r => {
+      const st = (r.subject_type ?? 'core').toLowerCase();
+      if (st === 'core') principal.push(r);
+      else others.push(r);
+    });
+    return { principal, others };
+  }
+
+  // Enhanced helper to group results by subject with better error handling
+  function groupResultsBySubject(results: Result[]): GroupedResult[] {
+    const grouped: Record<string, GroupedResult> = {};
+    
+    results.forEach((result) => {
+      const subjectKey = String(result.subject_id || result.subject_name);
+      if (!subjectKey) return; // Skip invalid results
+      
+      if (!grouped[subjectKey]) {
+        grouped[subjectKey] = {
+          subject_name: result.subject_name || `Subject ${subjectKey}`,
+          name_ar: result.name_ar,
+          teacher_name: result.teacher_name,
+          midTermScore: null,
+          endTermScore: null,
+          regularScore: null,
+          subject_type: result.subject_type || 'core', // Add subject type
+        };
+      }
+      
+      const resultType = (result.result_type_name || result.results_type || '').toLowerCase();
+      const score = parseFloat(String(result.score || 0));
+      
+      // Handle different result types
+      if (resultType.includes('mid')) {
+        grouped[subjectKey].midTermScore = score;
+      } else if (resultType.includes('end')) {
+        grouped[subjectKey].endTermScore = score;
+        if (result.mid_term_score !== undefined && result.mid_term_score !== null) {
+          grouped[subjectKey].midTermScore = parseFloat(String(result.mid_term_score || 0));
+        }
+        if (result.end_term_score !== undefined && result.end_term_score !== null) {
+          grouped[subjectKey].endTermScore = parseFloat(String(result.end_term_score || 0));
+        }
+      } else {
+        grouped[subjectKey].regularScore = score;
+        if (result.mid_term_score !== undefined && result.mid_term_score !== null) {
+          grouped[subjectKey].midTermScore = parseFloat(String(result.mid_term_score || 0));
+        }
+        if (result.end_term_score !== undefined && result.end_term_score !== null) {
+          grouped[subjectKey].endTermScore = parseFloat(String(result.end_term_score || 0));
+        }
+      }
+    });
+    
+    // Cross-reference logic for missing scores
+    const allSubjects = new Set(results.map(r => String(r.subject_id || r.subject_name)));
+    
+    allSubjects.forEach(subjectKey => {
+      if (!grouped[subjectKey]) return;
+      
+      const subjectResults = results.filter(r => String(r.subject_id || r.subject_name) === subjectKey);
+      
+      if (grouped[subjectKey].midTermScore === null) {
+        const midTermResult = subjectResults.find(r => 
+          (r.result_type_name || r.results_type || '').toLowerCase().includes('mid')
+        );
+        if (midTermResult) {
+          grouped[subjectKey].midTermScore = parseFloat(String(midTermResult.score || 0));
+        }
+      }
+      
+      if (grouped[subjectKey].endTermScore === null) {
+        const endTermResult = subjectResults.find(r => 
+          (r.result_type_name || r.results_type || '').toLowerCase().includes('end')
+        );
+        if (endTermResult) {
+          grouped[subjectKey].endTermScore = parseFloat(String(endTermResult.score || 0));
+        }
+      }
+    });
+    
+    return Object.values(grouped).filter(item => item.subject_name);
+  }
+
+  // Helper function to check if student is in Nursery section
+  function isNurseryStudent(className: string): boolean {
+    const nurseryKeywords = ['nursery', 'baby', 'kindergarten', 'pre', 'reception'];
+    return nurseryKeywords.some(keyword => 
+      className.toLowerCase().includes(keyword)
+    );
+  }
+
+  // Updated grading function with new scale
+  function getGrade(score: number, isNursery: boolean = false) {
+    const standardGrade = (() => {
+      if (score >= 90) return 'D1';
+      if (score >= 80) return 'D2';
+      if (score >= 70) return 'C3';
+      if (score >= 60) return 'C4';
+      if (score >= 50) return 'C5';
+      if (score >= 44) return 'C6';
+      if (score >= 40) return 'P7';
+      if (score >= 34) return 'P8';
+      return 'F9';
+    })();
+
+    if (!isNursery) return standardGrade;
+
+    // Nursery grade mapping
+    switch (standardGrade) {
+      case 'D1':
+      case 'D2':
+        return 'A';
+      case 'C3':
+      case 'C4':
+        return 'B';
+      case 'C5':
+      case 'C6':
+        return 'C';
+      case 'P7':
+      case 'P8':
+        return 'D';
+      case 'F9':
+        return 'E';
+      default:
+        return 'E';
+    }
+  }
+
+  // Helper function to get overall grade for Nursery (mode of grades)
+  function getNurseryOverallGrade(grades: string[]): string {
+    if (grades.length === 0) return 'C';
+
+    // Count frequency of each grade
+    const gradeCount: Record<string, number> = {};
+    grades.forEach(grade => {
+      gradeCount[grade] = (gradeCount[grade] || 0) + 1;
+    });
+
+    // Find the most frequent grade(s)
+    const maxCount = Math.max(...Object.values(gradeCount));
+    const mostFrequentGrades = Object.keys(gradeCount).filter(
+      grade => gradeCount[grade] === maxCount
+    );
+
+    // If there's a clear majority, return it
+    if (mostFrequentGrades.length === 1) {
+      return mostFrequentGrades[0];
+    }
+
+    // If grades are balanced, return 'C'
+    return 'C';
+  }
+  
+  function getGradePoint(grade: string) {
+    switch (grade) {
+      case 'D1': return 1;
+      case 'D2': return 2;
+      case 'C3': return 3;
+      case 'C4': return 4;
+      case 'C5': return 5;
+      case 'C6': return 6;
+      case 'P8': return 8;
+      case 'F9': return 9;
+      default: return 9;
+    }
+  }
+  
+  function getDivision(aggregates: number) {
+    if (aggregates <= 12) return 'Division 1';
+    if (aggregates <= 24) return 'Division 2';
+    if (aggregates <= 28) return 'Division 3';
+    if (aggregates <= 32) return 'Division 4';
+    return 'Division U';
+  }
+  
+  function commentsForGrade(grade: string) {
+    if (grade === 'D1') return 'Excellent results, keep it up.';
+    if (grade === 'D2') return 'Very good score, but aim at excellency.';
+    if (grade === 'C3') return 'Satisfactory performance, please work harder.';
+    if (grade === 'C4') return 'Needs improvement, consider seeking help.';
+    if (grade === 'C5') return 'Unsatisfactory, please see your teacher.';
+    if (grade === 'C6') return 'Needs improvement, consider seeking help.';
+    if (grade === 'P8') return 'Passed, but you can do better.';
+    if (grade === 'F9') return 'Failed, please see your teacher for guidance.';
+    return 'Continue working hard.';
+  }
+
+  // Save initials to backend
+  const saveInitialsToBackend = async (classId: string, subjectId: string, newInitials: string): Promise<void> => {
+    setSaving(true);
+    try {
+      await fetch('/api/teacher-initials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId, subjectId, initials: newInitials }),
+      });
+    } catch (error) {
+      console.error('Failed to save initials:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Export reports to PDF
+  const exportToPDF = async (): Promise<void> => {
+    const reportArea = document.querySelector('.p-4') as HTMLElement; // Ensure this targets the correct container
+    if (!reportArea) {
+      window.alert('Report area not found!');
+      return;
+    }
+
+    try {
+      // Use html2canvas to capture the report area
+      const canvas = await html2canvas(reportArea, {
+        scale: 3, // Increase scale for high-resolution rendering
+        useCORS: true, // Enable cross-origin for images
+        allowTaint: false, // Prevent tainted canvas errors
+        logging: false, // Disable logging for production
+        backgroundColor: '#ffffff', // Ensure white background for the PDF
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      // Add the captured image to the PDF
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      // Save the PDF
+      pdf.save('Reports.pdf');
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      window.alert('Failed to export PDF. Please try again.');
+    }
+  };
+
+  // Export reports to Excel
+  const exportToExcel = (): void => {
+    const workbook = XLSX.utils.book_new();
+    Object.values(classGroupsWithPositions).forEach((classGroup: ClassGroup) => {
+      const worksheetData: (string | number)[][] = [
+        ['Student Name', 'Subject', 'Teacher Initials', 'Score'],
+        ...classGroup.students.flatMap((student: Student) =>
+          student.results.map((result: Result) => [
+            `${student.first_name} ${student.last_name}`,
+            result.subject_name,
+            teacherInitials[`${result.class_id}-${result.subject_id}`] || result.teacher_initials || 'N/A',
+            result.score,
+          ])
+        ),
+      ];
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, classGroup.className);
+    });
+    XLSX.writeFile(workbook, 'Reports.xlsx');
+  };
+
+  // Handle inline editing of teacher initials
+  const handleInitialsChange = (classId: string, subjectId: string, newInitials: string): void => {
+    setTeacherInitials((prev) => ({
+      ...prev,
+      [`${classId}-${subjectId}`]: newInitials,
+    }));
+  };
+
+  // Sync "Next Term Begins" field across all reports
+  const handleNextTermChange = (newDate: string) => {
+    setNextTermBegins(newDate);
+    // Optionally save to backend
+    fetch('/api/next-term', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nextTermBegins: newDate }),
+    }).catch(console.error);
+  };
+
+  // Inject/remove the @page landscape rule dynamically — cannot be done in
+  // static styled-jsx because @page is not scopeable to a CSS class.
+  useEffect(() => {
+    const STYLE_ID = 'drais-print-page-size';
+    let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+    if (selectedTemplate === 'dual') {
+      if (!el) {
+        el = document.createElement('style');
+        el.id = STYLE_ID;
+        document.head.appendChild(el);
+      }
+      el.textContent = '@media print { @page { size: A4 landscape; margin: 10mm; } }';
+    } else {
+      el?.remove();
+    }
+    return () => { document.getElementById(STYLE_ID)?.remove(); };
+  }, [selectedTemplate]);
+
+  return (
+    <TeacherInitialsContext.Provider value={{ teacherInitials, handleInitialsChange }}>
+      <div className="px-4 mt-0">
+        {/* Promotion Summary Notification - Only for 3rd Term */}
+        {filters.term === 'Term 3' && promotionData && (promotionData as any)?.success && (
+          <div className="mb-6 no-print">
+            <PromotionSummaryNotification
+              data={(promotionData as any).data}
+              onPromoteStudents={handlePromoteStudents}
+            />
+          </div>
+        )}
+
+        {/* Filter Section at the top - Hidden when printing */}
+        <div className="no-print mb-4 space-y-3">
+          {/* Row 1: Filter dropdowns */}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={filters.academicYearId}
+              onChange={(e) => setFilters((f) => ({ ...f, academicYearId: e.target.value, term: '' }))}
+              className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+              title="Filter by academic year"
+            >
+              <option value="">All Years</option>
+              {academicYears.map((ay) => (
+                <option key={ay.id} value={ay.id}>
+                  {ay.name} {ay.status === 'active' ? '(Current)' : ''}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.term}
+              onChange={(e) => setFilters((f) => ({ ...f, term: e.target.value }))}
+              className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">All Terms</option>
+            {filteredTerms.length > 0
+              ? filteredTerms.map((t) => (
+                  <option key={t.id} value={t.name}>
+                    {t.name}
+                  </option>
+                ))
+              : <>
+                  <option value="Term 1">Term 1</option>
+                  <option value="Term 2">Term 2</option>
+                  <option value="Term 3">Term 3</option>
+                </>
+            }
+          </select>
+
+          <select
+            value={filters.resultType}
+            onChange={(e) => setFilters((f) => ({ ...f, resultType: e.target.value }))}
+            className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          >
+            <option value="">All Result Types</option>
+            {[...new Set(allResults.map((r) => r.result_type_name || r.results_type))]
+              .filter(Boolean)
+              .map((rt) => (
+                <option key={rt} value={rt}>
+                  {rt}
+                </option>
+              ))}
+          </select>
+
+          <select
+            value={filters.classId}
+            onChange={(e) => setFilters((f) => ({ ...f, classId: e.target.value }))}
+            className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          >
+            <option value="">All Classes</option>
+            {[...new Set(
+              allStudents.length
+                ? allStudents.map((s) => s.class_name || s.class_id)
+                : allResults.map((r) => r.class_name)
+            )]
+              .filter(Boolean)
+              .map((cid) => {
+                const label = allStudents.length
+                  ? allStudents.find((s) => (s.class_name || s.class_id) === cid)?.class_name || cid
+                  : cid;
+                return (
+                  <option key={cid} value={cid}>
+                    {label}
+                  </option>
+                );
+              })}
+          </select>
+
+          <input
+            value={filters.student}
+            onChange={(e) => setFilters((f) => ({ ...f, student: e.target.value }))}
+            placeholder="Search student..."
+            className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors min-w-[160px]"
+          />
+
+          {/* Template selector — Phase 1 */}
+          <select
+            value={selectedTemplate}
+            onChange={(e) => {
+              const key = e.target.value as TemplateKey;
+              setSelectedTemplate(templateRegistry[key] ? key : 'default');
+            }}
+            className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            title="Select report template"
+          >
+            {activeDrceDoc && (
+              <option value="drce">{(activeDrceDoc.meta as any)?.name ?? 'Custom Template (Kitchen)'}</option>
+            )}
+            <option value="default">Default Template</option>
+            <option value="arabic">Arabic Template</option>
+            <option value="dual">Dual Curriculum</option>
+            <option value="default-clone">Default (Clone)</option>
+            <option value="arabic-clone">Arabic (Clone)</option>
+          </select>
+
+          {/* Curriculum filter — Phase 2 */}
+          <select
+            value={curriculum}
+            onChange={(e) => setCurriculum(e.target.value as 'all' | 'secular' | 'theology')}
+            className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+            title="Filter by curriculum"
+          >
+            <option value="all">All Subjects</option>
+            <option value="secular">Secular Only</option>
+            <option value="theology">Theology Only</option>
+          </select>
+
+          {/* Language selector — Phase 5, wired to state */}
+          <select
+            value={selectedLanguage === 'ar' ? 'Arabic' : 'English'}
+            onChange={(e) => setSelectedLanguage(e.target.value === 'Arabic' ? 'ar' : 'en')}
+            className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            title="Display language"
+          >
+            <option value="English">English</option>
+            <option value="Arabic">العربية</option>
+          </select>
+          </div>
+
+          {/* Row 2: Action buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-white bg-blue-600 shadow-sm hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            Print
+          </button>
+
+          <button
+            onClick={exportToPDF}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-white bg-emerald-600 shadow-sm hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Export PDF
+          </button>
+
+          <button
+            onClick={exportToExcel}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-white bg-teal-600 shadow-sm hover:bg-teal-700 active:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Export Excel
+          </button>
+
+          <button
+            onClick={() => setShowCustomization(true)}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-white bg-gray-600 shadow-sm hover:bg-gray-700 active:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            Customize
+          </button>
+
+          <a
+            href="/reports/kitchen"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium text-white bg-amber-600 shadow-sm hover:bg-amber-700 active:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 transition-colors no-underline"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+            Template Kitchen
+          </a>
+
+          <div className="ml-auto flex items-center gap-2 text-sm text-gray-500">
+            {loading && <span className="inline-flex items-center gap-1"><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Loading...</span>}
+            {!loading && Object.keys(classGroupsWithPositions).length > 0 && (
+              <span>{Object.values(classGroupsWithPositions).reduce((sum, g) => sum + g.students.length, 0)} students in {Object.keys(classGroupsWithPositions).length} class(es)</span>
+            )}
+          </div>
+          </div>
+        </div>
+        <div>
+          {!loading && Object.keys(classGroupsWithPositions).length === 0 && allResults.length > 0 && (
+            <div className="no-print text-center py-12 text-gray-500">
+              <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <p className="font-medium">No reports match your filters</p>
+              <p className="text-sm mt-1">Try adjusting the year, term, class, or result type filters above.</p>
+            </div>
+          )}
+          {!loading && allResults.length === 0 && (
+            <div className="no-print text-center py-12 text-gray-500">
+              <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <p className="font-medium">No report data found</p>
+              <p className="text-sm mt-1">Enter results in the Results page first, then come back here to generate reports.</p>
+            </div>
+          )}
+          {Object.values(classGroupsWithPositions).map((classGroup: any) => (
+            <div key={classGroup.className}>
+              <div className="classHeading text-2xl font-bold text-center my-0">{classGroup.className}</div>
+              {classGroup.students.map((student: any) => {
+                // ── Phase 2: apply curriculum filter to results client-side
+                // The dual template always receives all results (it splits them internally).
+                const isCurriculumFiltered = selectedTemplate !== 'dual' && curriculum !== 'all';
+                const filteredStudentResults: Result[] = isCurriculumFiltered
+                  ? (student.results || []).filter((r: Result) => {
+                      const type = (r.subject_type || '').toLowerCase();
+                      if (curriculum === 'secular') {
+                        return type === 'secular' || (!type.includes('theol') && !type.includes('islam') && !type.includes('religion') && type !== 'theology');
+                      }
+                      if (curriculum === 'theology') {
+                        return type === 'theology' || type.includes('theol') || type.includes('islam') || type.includes('religion');
+                      }
+                      return true;
+                    })
+                  : (student.results || []);
+
+                const { principal, others } = splitSubjects(filteredStudentResults);
+                const groupedResults = groupResultsBySubject(principal);
+                const allGroupedResults = groupResultsBySubject([...principal, ...others]); // Include all subjects for display
+                
+                const isNursery = isNurseryStudent(student.class_name);
+                
+                const isEndOfTerm = filters.resultType?.toLowerCase().includes('end') || 
+                  principal.some((r: any) => (r.result_type_name || r.results_type || '').toLowerCase().includes('end'));
+
+                // Enhanced calculations - only use CORE subjects for grading
+                const coreResults = groupedResults.filter(r => 
+                  (r.subject_type || 'core').toLowerCase() === 'core'
+                );
+
+                const totalMarks = allGroupedResults.reduce((sum, r) => {
+                  const { totalMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                  return sum + totalMarks;
+                }, 0);
+                
+                const coreGradingMarks = coreResults.reduce((sum, r) => {
+                  const { totalMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                  return sum + totalMarks;
+                }, 0);
+                
+                const averageMarks = coreResults.length > 0 ? Math.round(coreGradingMarks / coreResults.length) : 0;
+                
+                // Calculate aggregates and division/overall grade
+                let aggregates = 0;
+                let division = '';
+                let nurseryOverallGrade = '';
+
+                if (isNursery) {
+                  // For Nursery: get overall grade based on mode (core subjects only)
+                  const coreGrades = coreResults.map(r => {
+                    const { totalMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                    return getGrade(totalMarks, true);
+                  });
+                  nurseryOverallGrade = getNurseryOverallGrade(coreGrades);
+                } else {
+                  // For non-Nursery: calculate traditional aggregates and division (core subjects only)
+                  aggregates = coreResults.reduce((sum, r) => {
+                    const { totalMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                    return sum + getGradePoint(getGrade(totalMarks, false));
+                  }, 0);
+                  division = getDivision(aggregates);
+
+                  // Adjust division based on F9 grades
+                  const coreGrades = coreResults.map(r => {
+                    const { totalMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                    return getGrade(totalMarks, false);
+                  });
+                  division = adjustDivisionForF9(division, coreGrades);
+                }
+
+                // ── DRCE: render the template activated via Template Kitchen
+                if (selectedTemplate === 'drce' && activeDrceDoc) {
+                  const drceData: DRCEDataContext = {
+                    student: {
+                      fullName: `${student.first_name} ${student.last_name}`,
+                      firstName: student.first_name,
+                      lastName: student.last_name,
+                      gender: student.gender || '',
+                      className: student.class_name,
+                      streamName: student.stream_name || '',
+                      admissionNo: student.admission_no,
+                      photoUrl: student.photo || null,
+                      dateOfBirth: null,
+                    },
+                    results: allGroupedResults.map(r => {
+                      const { midTermMarks, endTermMarks, totalMarks: tM } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                      const scoreForGrade = isEndOfTerm ? tM : midTermMarks;
+                      // Resolve teacher initials from kitchen mappings first
+                      const resolvedInitials = (() => {
+                        const maps = activeDrceDoc.teacherMappings;
+                        if (maps?.length) {
+                          const subj = (r.subject_name || '').toLowerCase();
+                          const cls  = (student.class_name || '').toLowerCase();
+                          const match = maps.find(m => {
+                            const sp = (m.subjectPattern || '').toLowerCase();
+                            const cp = (m.classPattern  || '').toLowerCase();
+                            const subjOk = !sp || subj.includes(sp);
+                            const clsOk  = !cp || cp === 'all' || cls.includes(cp);
+                            return subjOk && clsOk;
+                          });
+                          if (match) return match.initials;
+                        }
+                        return r.teacher_name?.split(' ').map((n: string) => n[0]).join('') || 'N/A';
+                      })();
+                      return {
+                        subjectName: r.subject_name,
+                        midTermScore: midTermMarks || null,
+                        endTermScore: isEndOfTerm ? (endTermMarks || null) : null,
+                        total: tM || null,
+                        grade: getGrade(scoreForGrade || 0, isNursery),
+                        comment: commentsForGrade(getGrade(scoreForGrade || 0, isNursery)),
+                        initials: resolvedInitials,
+                        teacherName: r.teacher_name || '',
+                        subjectType: (r.subject_type || 'core').toLowerCase() === 'core' ? 'primary' : 'secondary',
+                      };
+                    }),
+                    assessment: {
+                      classPosition: student.position ?? null,
+                      streamPosition: null,
+                      aggregates: isNursery ? null : (aggregates || null),
+                      division: isNursery ? (nurseryOverallGrade || null) : (division || null),
+                      totalStudents: student.totalInClass ?? null,
+                      position: (student.position && student.totalInClass)
+                        ? `${student.position} / ${student.totalInClass}`
+                        : (student.position ? String(student.position) : null),
+                    },
+                    comments: (() => {
+                      const divComments = getCommentsByDivision(
+                        isNursery ? nurseryOverallGrade : division
+                      );
+                      // Check if kitchen comment rules exist — match by student's average total score
+                      const rules = activeDrceDoc.commentRules;
+                      let ruleComments: { classTeacher: string; dos: string; headTeacher: string } | null = null;
+                      if (rules?.length) {
+                        const scores = allGroupedResults.map(r => {
+                          const { totalMarks: tM, midTermMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                          return (isEndOfTerm ? tM : midTermMarks) || 0;
+                        });
+                        const avg = scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
+                        const matched = rules.find(rule => avg >= rule.minScore && avg <= rule.maxScore);
+                        if (matched) {
+                          ruleComments = {
+                            classTeacher: matched.classTeacher,
+                            dos:          matched.dos,
+                            headTeacher:  matched.headTeacher,
+                          };
+                        }
+                      }
+                      return {
+                        classTeacher: student.class_teacher_comment || ruleComments?.classTeacher || divComments.classTeacher,
+                        dos:          student.dos_comment           || ruleComments?.dos          || divComments.dos,
+                        headTeacher:  student.headteacher_comment   || ruleComments?.headTeacher  || divComments.headteacher,
+                      };
+                    })(),
+                    meta: {
+                      schoolName: schoolInfo.name,
+                      schoolAddress: schoolInfo.address || '',
+                      schoolContact: schoolInfo.contact || '',
+                      centerNo: schoolInfo.center_no || '',
+                      registrationNo: schoolInfo.registration_no || '',
+                      arabicName: schoolInfo.arabic_name || null,
+                      arabicAddress: schoolInfo.arabic_address || null,
+                      logoUrl: schoolInfo.logo_url || null,
+                      term: editableTermValue || filters.term || '',
+                      year: '',
+                      reportTitle: [
+                        (principal[0]?.result_type_name || principal[0]?.results_type || 'MID TERM')
+                          .toUpperCase(),
+                        filters.term ? filters.term.toUpperCase() : '',
+                        'REPORT',
+                      ].filter(Boolean).join(' '),
+                    },
+                  };
+                  const drceRenderCtx: DRCERenderContext = {
+                    school: {
+                      name: schoolInfo.name,
+                      arabic_name: schoolInfo.arabic_name || undefined,
+                      address: schoolInfo.address || undefined,
+                      contact: schoolInfo.contact || undefined,
+                      center_no: schoolInfo.center_no || undefined,
+                      registration_no: schoolInfo.registration_no || undefined,
+                      logo_url: schoolInfo.logo_url || '/uploads/logo.png',
+                    },
+                  };
+                  return (
+                    <div
+                      key={student.student_id}
+                      style={{ pageBreakAfter: 'always', display: 'flex', justifyContent: 'center' }}
+                    >
+                      <DRCEDocumentRenderer
+                        document={activeDrceDoc}
+                        dataCtx={drceData}
+                        renderCtx={drceRenderCtx}
+                      />
+                    </div>
+                  );
+                }
+
+                // ── Phase 3: Render DualCurriculumTemplate for 'dual' selection
+                if (selectedTemplate === 'dual') {
+                  return (
+                    <DualCurriculumTemplate
+                      key={student.student_id}
+                      student={{ ...student, results: filteredStudentResults }}
+                      schoolInfo={schoolInfo}
+                      activeLayout={activeLayout}
+                      isEndOfTerm={isEndOfTerm}
+                      enableMarkConversion={enableMarkConversion}
+                      editableTermValue={editableTermValue}
+                      nextTermBegins={nextTermBegins}
+                      division={division}
+                      aggregates={aggregates}
+                      isNursery={isNursery}
+                      nurseryOverallGrade={nurseryOverallGrade}
+                      teacherInitials={teacherInitials}
+                      onInitialsChange={handleInitialsChange}
+                      onInitialsSave={saveInitialsToBackend}
+                      onNextTermChange={handleNextTermChange}
+                      onLogoUpload={handleLogoUpload}
+                    />
+                  );
+                }
+
+                // ── Phase 1 & 5: 'arabic' / 'arabic-clone' = RTL-first default layout
+                // The standard layout already renders Arabic on the right; marking it here
+                // confirms the template key resolved correctly.
+                const isArabicMode = selectedTemplate === 'arabic' || selectedTemplate === 'arabic-clone';
+
+                return (
+                  <div key={student.student_id} style={{
+                    pageBreakAfter: 'always',
+                    background: activeLayout.page.background,
+                    boxShadow: activeLayout.page.boxShadow,
+                    padding: activeLayout.page.padding,
+                    borderRadius: activeLayout.page.borderRadius,
+                    maxWidth: activeLayout.page.maxWidth,
+                    margin: activeLayout.page.margin,
+                    fontSize: activeLayout.page.fontSize,
+                    fontFamily: activeLayout.page.fontFamily,
+                  }}>
+                    {/* Header */}
+                    {/* Phase 5: isArabicMode = Arabic-first layout */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: activeLayout.header.layout === 'centered' ? 'center' : 'space-between',
+                      alignItems: 'center',
+                      flexDirection: activeLayout.header.layout === 'centered' ? 'column' : (isArabicMode ? 'row-reverse' : 'row'),
+                      paddingBottom: activeLayout.header.paddingBottom,
+                      opacity: activeLayout.header.opacity,
+                      marginBottom: 0,
+                      marginTop: 0,
+                      borderBottom: activeLayout.header.borderBottom,
+                    }}>
+                      <div className="text-left ltr:text-left rtl:text-right" style={{ direction: 'ltr', textAlign: 'left', flex: 1 }}>
+                        <h2 className="text-xl font-bold">{schoolInfo.name}</h2>
+                        <p>{schoolInfo.address}</p>
+                        <p>{schoolInfo.contact}</p>
+                        <p>{schoolInfo.center_no}</p>
+                        <p>{schoolInfo.registration_no}</p>
+                      </div>
+                      <div
+                        className="text-center"
+                        style={{ flex: 'none', cursor: 'pointer', position: 'relative' }}
+                        onClick={() => defaultLogoInputRef.current?.click()}
+                        title="Click to change logo"
+                      >
+                        <input
+                          ref={defaultLogoInputRef}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setDefaultLogoUploading(true);
+                            await handleLogoUpload(file);
+                            setDefaultLogoUploading(false);
+                            e.target.value = '';
+                          }}
+                        />
+                        <img
+                          src={schoolInfo.logo_url || '/uploads/logo.png'}
+                          alt="School Logo"
+                          style={{ maxHeight: 80, width: 'auto', objectFit: 'contain', borderRadius: 4, border: '2px dashed transparent' }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLImageElement).style.border = '2px dashed #4f8cf7'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLImageElement).style.border = '2px dashed transparent'; }}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/uploads/logo.png'; }}
+                        />
+                        {defaultLogoUploading && (
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)', borderRadius: 4, fontSize: 10 }}>
+                            Uploading…
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right font-bold text-xl rtl:text-right ltr:text-left" style={{ direction: 'rtl', textAlign: 'right', flex: 1 }}>
+                        <h1 className="text-xl font-bold">{schoolInfo.arabic_name}</h1>
+                        <p>{schoolInfo.arabic_address}</p>
+                        <p className="arabic-font">{toArabicDigits(schoolInfo.arabic_contact)}</p>
+                        <p className="arabic-font">UNEB: {toArabicDigits(schoolInfo.arabic_center_no)}</p>
+                        <p className="arabic-font">Reg: {toArabicDigits(schoolInfo.arabic_registration_no)}</p>
+                      </div>
+                    </div>
+                    {/* Banner */}
+                    <div style={{
+                      backgroundColor: activeLayout.banner.backgroundColor,
+                      color: activeLayout.banner.color,
+                      textAlign: activeLayout.banner.textAlign,
+                      fontSize: activeLayout.banner.fontSize,
+                      fontWeight: activeLayout.banner.fontWeight,
+                      padding: activeLayout.banner.padding,
+                      marginTop: activeLayout.banner.marginTop,
+                      marginBottom: activeLayout.banner.marginBottom,
+                      borderRadius: activeLayout.banner.borderRadius,
+                      letterSpacing: activeLayout.banner.letterSpacing,
+                      textTransform: activeLayout.banner.textTransform,
+                      cursor: 'text',
+                    }} contentEditable suppressContentEditableWarning>
+                      {(principal[0]?.result_type_name || 'MID TERM').toUpperCase()} REPORT
+                    </div>
+                    {/* Student Info */}
+                    <div style={{
+                      border: activeLayout.studentInfoBox.border,
+                      borderRadius: activeLayout.studentInfoBox.borderRadius,
+                      padding: activeLayout.studentInfoBox.padding,
+                      background: activeLayout.studentInfoBox.background,
+                      boxShadow: activeLayout.studentInfoBox.boxShadow,
+                      margin: activeLayout.studentInfoBox.margin,
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        gap: 5,
+                        marginBottom: 2,
+                        alignItems: 'center',
+                      }}>
+                        <div style={{ display: 'flex', flexDirection: 'row', padding: 0, margin: 0, gap: 2, alignItems: 'center' }}>
+                          <img src={`/api/barcode?id=${student.student_id}`} style={{ width: 90, height: 40, marginRight: -30, marginLeft: -20, transform: 'rotate(270deg)' }} alt="Barcode" />
+                          <span style={{ fontSize: 15, fontWeight: 500, margin: 0, transform: 'rotate(180deg)', writingMode: 'vertical-rl' as any }}>{student.student_id}</span>
+                        </div>
+                        <img
+                          src={student.photo || '/default-avatar.png'}
+                          alt={`${student.first_name} ${student.last_name}`}
+                          width={100}
+                          height={115}
+                          style={{ width: 100, height: 115, objectFit: 'cover', marginRight: 20, border: '2px solid #eee', background: '#f0f0f0' }}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/default-avatar.png'; }}
+                        />
+                        <div>
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: activeLayout.studentInfoContainer.flexDirection,
+                            marginBottom: 0,
+                            paddingBottom: 0,
+                            borderBottom: activeLayout.studentInfoContainer.borderBottom,
+                            fontSize: activeLayout.studentInfoContainer.fontSize,
+                          }}>
+                            <p style={{ margin: 0, padding: 0 }}>
+                              <span className="font-bold" style={{ color: '#000' }}>Name:</span>
+                              <span 
+                                style={{ color: activeLayout.studentValue.color, fontStyle: activeLayout.studentValue.fontStyle as any, fontWeight: activeLayout.studentValue.fontWeight, cursor: 'text' }} 
+                                contentEditable 
+                                suppressContentEditableWarning
+                              > {student.first_name} {student.last_name}</span>
+                            </p>
+                            <p style={{ margin: 0, padding: 0 }}>
+                              <span className="font-bold" style={{ color: '#000' }}>Gender:</span>
+                              <span 
+                                style={{ color: activeLayout.studentValue.color, fontStyle: activeLayout.studentValue.fontStyle as any, fontWeight: activeLayout.studentValue.fontWeight, cursor: 'text' }} 
+                                contentEditable 
+                                suppressContentEditableWarning
+                              > {student.gender || '-'}</span>
+                            </p>
+                            <p style={{ margin: 0, padding: 0 }}>
+                              <span className="font-bold" style={{ color: '#000' }}>Class:</span>
+                              <span 
+                                style={{ color: activeLayout.studentValue.color, fontStyle: activeLayout.studentValue.fontStyle as any, fontWeight: activeLayout.studentValue.fontWeight, cursor: 'text' }} 
+                                contentEditable 
+                                suppressContentEditableWarning
+                              > {student.class_name}</span>
+                            </p>
+                            <p style={{ margin: 0, padding: 0 }}>
+                              <span className="font-bold" style={{ color: '#000' }}>Stream:</span>
+                              <span 
+                                style={{ color: activeLayout.studentValue.color, fontStyle: activeLayout.studentValue.fontStyle as any, fontWeight: activeLayout.studentValue.fontWeight, cursor: 'text' }} 
+                                contentEditable 
+                                suppressContentEditableWarning
+                              > {student.stream_name || 'A'}</span>
+                            </p>
+                          </div>
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: activeLayout.studentInfoContainer.flexDirection,
+                            marginBottom: 0,
+                            paddingBottom: 0,
+                            borderBottom: activeLayout.studentInfoContainer.borderBottom,
+                            fontSize: activeLayout.studentInfoContainer.fontSize,
+                          }}>
+                            <p style={{ margin: 0, padding: 0 }}>
+                              <span className="font-bold" style={{ color: '#000' }}>Student No:</span>
+                              <span style={{ color: activeLayout.studentValue.color, fontStyle: activeLayout.studentValue.fontStyle as any, fontWeight: activeLayout.studentValue.fontWeight }}> {student.student_id}</span>
+                            </p>
+                            <p style={{ margin: 0, padding: 0 }}>
+                              <span className="font-bold" style={{ color: '#000' }}>Term:</span>
+                              <span 
+                                style={{ 
+                                  color: activeLayout.studentValue.color,
+                                  fontStyle: activeLayout.studentValue.fontStyle as any,
+                                  fontWeight: activeLayout.studentValue.fontWeight,
+                                  cursor: 'pointer',
+                                  borderBottom: isEditingTerm ? '1px solid #000' : 'none',
+                                  display: 'inline-block',
+                                  minWidth: '80px'
+                                }}
+                                contentEditable={isEditingTerm}
+                                suppressContentEditableWarning
+                                onClick={() => setIsEditingTerm(true)}
+                                onBlur={(e) => {
+                                  setIsEditingTerm(false);
+                                  const newValue = e.currentTarget.textContent || '';
+                                  setEditableTermValue(newValue);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    setIsEditingTerm(false);
+                                    const newValue = e.currentTarget.textContent || '';
+                                    setEditableTermValue(newValue);
+                                  }
+                                }}
+                              >
+                                {editableTermValue || principal[0]?.term_name || principal[0]?.term || 'Term 1'}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Ribbon */}
+                    <div style={{
+                      position: 'relative',
+                      background: activeLayout.ribbon.background,
+                      color: activeLayout.ribbon.color,
+                      textAlign: activeLayout.ribbon.textAlign,
+                      fontWeight: activeLayout.ribbon.fontWeight,
+                      fontSize: activeLayout.ribbon.fontSize,
+                      padding: activeLayout.ribbon.padding,
+                      marginTop: 4,
+                      marginBottom: 20,
+                      marginLeft: activeLayout.ribbon.marginSidesPercent,
+                      marginRight: activeLayout.ribbon.marginSidesPercent,
+                      borderRadius: activeLayout.ribbon.borderRadius,
+                      cursor: 'text',
+                    }} contentEditable suppressContentEditableWarning>Marks attained in each subject</div>
+                    {/* Subjects Table - Display ALL subjects but only core contribute to grading */}
+                    <table style={{ borderCollapse: activeLayout.table.borderCollapse, width: '100%', marginTop: 10, fontSize: activeLayout.table.fontSize }}>
+                      <thead>
+                        <tr>
+                          <th style={{ border: activeLayout.table.th.border, padding: activeLayout.table.th.padding, textAlign: activeLayout.table.th.textAlign, background: activeLayout.table.th.background, color: activeLayout.table.th.color }}>SUBJECT</th>
+                          <th style={{ border: activeLayout.table.th.border, padding: activeLayout.table.th.padding, textAlign: activeLayout.table.th.textAlign, background: activeLayout.table.th.background, color: activeLayout.table.th.color }}>{enableMarkConversion ? 'MT (40)' : 'MT'}</th>
+                          {isEndOfTerm && <th style={{ border: activeLayout.table.th.border, padding: activeLayout.table.th.padding, textAlign: activeLayout.table.th.textAlign, background: activeLayout.table.th.background, color: activeLayout.table.th.color }}>{enableMarkConversion ? 'EOT (60)' : 'EOT'}</th>}
+                          <th style={{ border: activeLayout.table.th.border, padding: activeLayout.table.th.padding, textAlign: activeLayout.table.th.textAlign, background: activeLayout.table.th.background, color: activeLayout.table.th.color }}>GRADE</th>
+                          <th style={{ border: activeLayout.table.th.border, padding: activeLayout.table.th.padding, textAlign: activeLayout.table.th.textAlign, background: activeLayout.table.th.background, color: activeLayout.table.th.color }}>COMMENT</th>
+                          <th style={{ border: activeLayout.table.th.border, padding: activeLayout.table.th.padding, textAlign: activeLayout.table.th.textAlign, background: activeLayout.table.th.background, color: activeLayout.table.th.color }}>INITIALS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allGroupedResults.map((r: GroupedResult, i: number) => {
+                          const { midTermMarks, endTermMarks, totalMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                          const isCore = (r.subject_type || 'core').toLowerCase() === 'core';
+
+                          const scoreToUse = isEndOfTerm ? totalMarks : midTermMarks;
+
+                          const initialsKey = `${student.class_name}-${r.subject_name}`;
+                          const currentInitials = teacherInitials[initialsKey] || 
+                            r.teacher_name?.split(' ').map((n: string) => n[0]).join('') || 'N/A';
+
+                          const tdStyle = { border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign, color: activeLayout.table.td.color };
+                          return (
+                            <tr key={i}>
+                              <td style={{ ...tdStyle, cursor: 'text', direction: isArabicMode ? 'rtl' : 'ltr' }} contentEditable suppressContentEditableWarning>{getSubjectName(r, isArabicMode ? 'ar' : 'en')}</td>
+                              <td style={{ ...tdStyle, cursor: 'text' }} contentEditable suppressContentEditableWarning>{midTermMarks || '-'}</td>
+                              {isEndOfTerm && <td style={{ ...tdStyle, cursor: 'text' }} contentEditable suppressContentEditableWarning>{endTermMarks || '-'}</td>}
+                              <td style={{ ...tdStyle, cursor: 'text' }} contentEditable suppressContentEditableWarning>{getGrade(scoreToUse || 0, isNursery)}</td>
+                              <td style={{ ...tdStyle, cursor: 'text', fontSize: activeLayout.table.fontSize - 1 }} contentEditable suppressContentEditableWarning>{commentsForGrade(getGrade(scoreToUse || 0, isNursery))}</td>
+                              <td
+                                style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign, color: activeLayout.table.td.color }}
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => {
+                                  const newInitials = e.currentTarget.textContent?.trim() || 'N/A';
+                                  handleInitialsChange(student.class_name, r.subject_name, newInitials);
+                                  saveInitialsToBackend(student.class_name, r.subject_name, newInitials);
+                                }}
+                              >
+                                {currentInitials}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        <tr style={{ fontWeight: 'bold' }}>
+                          <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign }}>TOTAL MARKS:</td>
+                          <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{Math.round(allGroupedResults.reduce((sum, r) => sum + (r.midTermScore || 0), 0))}</td>
+                          {isEndOfTerm && <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{Math.round(allGroupedResults.reduce((sum, r) => sum + (r.endTermScore || 0), 0))}</td>}
+                          <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding }}></td>
+                          <td colSpan={2} style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, cursor: 'text' }} contentEditable suppressContentEditableWarning>
+                            AVERAGE: {allGroupedResults.length > 0 ? Math.round(totalMarks / allGroupedResults.length) : 0}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    
+                    {/* Assessment Section - Modified for Nursery */}
+                    <div style={{ marginTop: 20, fontSize: activeLayout.page.fontSize }}>
+                      <h3 style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: 10, cursor: 'text' }} contentEditable suppressContentEditableWarning>
+                        General Assessment
+                      </h3>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        border: activeLayout.assessmentBox.border,
+                        borderRadius: activeLayout.assessmentBox.borderRadius,
+                        padding: activeLayout.assessmentBox.padding,
+                      }}>
+                        <div>
+                          {!isNursery ? (
+                            <>
+                              <p><strong>Aggregates:</strong> <span contentEditable suppressContentEditableWarning style={{cursor: 'text'}}>{aggregates}</span></p>
+                              <p><strong>Division:</strong> <span contentEditable suppressContentEditableWarning style={{cursor: 'text'}}>{division}</span></p>
+                            </>
+                          ) : (
+                            <p><strong>Overall Grade:</strong> <span contentEditable suppressContentEditableWarning style={{cursor: 'text'}}>{nurseryOverallGrade}</span></p>
+                          )}
+                        </div>
+                        <div>
+                          
+                          <div
+                            contentEditable
+                            suppressContentEditableWarning
+                            style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              padding: activeLayout.assessmentBox.padding, 
+                              border: activeLayout.assessmentBox.border, 
+                              borderRadius: activeLayout.assessmentBox.borderRadius, 
+                              cursor: 'text',
+                              minHeight: '50px'
+                            }}
+                          >
+                            {
+                              (() => {
+                                const currentClass = student.class_name;
+                                const nextClass = currentClass.replace(/\d+/, (match: string) => parseInt(match) + 1);
+
+                                if (filters.resultType?.toLowerCase().includes('end')) {
+                                  if (division === 'Division 1' || division === 'Division 2' || division === 'Division 3') {
+                                    return `Promoted to next class `;
+                                    // return `Promoted to next class (${nextClass})`;
+                                  } else if (division === 'Division 4') {
+                                    return 'Advised to try the next class with remedial support';
+                                  } else {
+                                    return 'Advised to repeat this class';
+                                  }
+                                }
+
+                                return 'Promotion status will be determined at the end of the term.';
+                              })()
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Promotion Status Section */}
+                    {/* <div style={{ marginTop: 20, fontSize: 14 }}>
+                      <h3 style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: 10 }}>
+                        Promotion Status
+                      </h3>
+                      
+                    </div> */}
+                    {/* Comments Section */}
+                    <div style={{ marginTop: activeLayout.comments.marginTop, borderTop: activeLayout.comments.borderTop, paddingTop: activeLayout.comments.paddingTop }}>
+                      <CommentsSection
+                        student={student}
+                        division={isNursery ? nurseryOverallGrade : division}
+                        nextTermBegins={nextTermBegins}
+                        handleNextTermChange={handleNextTermChange}
+                        layout={activeLayout}
+                      />
+                    </div>
+                    {/* Grade Table */}
+                    <GradeTable layout={activeLayout} />
+                    {/* Footer - Enhanced for clarity and style */}
+                    {/* <div style={styles.footer}>
+                      <div style={styles.divider}></div>
+                      <div style={styles.footerContent}>
+                        <div style={styles.teacherComment}>
+                          <strong>Teacher's Comment:</strong> {student.class_teacher_comment || '-'}
+                        </div>
+                        <div style={styles.dosComment}>
+                          <strong>DOS Comment:</strong> {student.dos_comment || '-'}
+                        </div>
+                        <div style={styles.headteacherComment}>
+                          <strong>Headteacher's Comment:</strong> {student.headteacher_comment || '-'}
+                        </div>
+                      </div>
+                    </div> */}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        
+        {/* Customization Modal - Enhanced layout and controls */}
+        {showCustomization && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 relative overflow-y-auto max-h-[90vh] mx-4">
+              <button className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors text-xl" onClick={() => setShowCustomization(false)}>&times;</button>
+              <h2 className="text-xl font-bold mb-4">Customize Report Style</h2>
+              <div className="mb-4 flex gap-1 border-b border-gray-200">
+                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='school'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('school')}>School</button>
+                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='banner'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('banner')}>Banners</button>
+                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='table'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('table')}>Tables</button>
+                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='comment'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('comment')}>Comments</button>
+                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='other'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('other')}>Other</button>
+              </div>
+              <form>
+                {customTab==='school' && (
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block font-semibold mb-1">School Name</label>
+                      <input type="text" className="w-full border rounded px-2 py-1" name="school_name" placeholder="School Name" />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1">School Badge/Logo</label>
+                      <input type="file" className="w-full border rounded px-2 py-1" name="school_logo_file" accept="image/*" />
+                    </div>
+                  </div>
+                )}
+                {/* Add other customization tabs content as needed */}
+                <div className="flex justify-end gap-2 mt-6">
+                  <button
+                    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                    type="button"
+                    onClick={() => setShowCustomization(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
+                    type="button"
+                    onClick={() => setShowCustomization(false)}
+                  >
+                    Apply Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        <style jsx global>{`
+          .no-print {
+            display: block;
+          }
+
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+
+            .dual-report-page {
+              width: 100% !important;
+              max-width: 100% !important;
+              box-shadow: none !important;
+              overflow-x: hidden !important;
+            }
+
+            .classHeading,
+            button,
+            select,
+            input,
+            label {
+              display: none !important;
+            }
+
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+            }
+
+            .px-4, .mt-0, .p-4 {
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+
+            div[class*="px-4"], div[class*="mt-0"] {
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+
+            .reportPage {
+              page-break-inside: avoid;
+              page-break-after: always;
+              width: 100% !important;
+              max-width: 100% !important;
+              box-shadow: none !important;
+              border: none !important;
+              margin: 0 !important;
+              padding: 16px 18px !important;
+              border-radius: 0 !important;
+            }
+
+            .reportPage:first-of-type {
+              margin-top: 0 !important;
+              padding-top: 0 !important;
+            }
+
+            .classHeading {
+              display: none !important;
+            }
+
+            .reportPage,
+            .reportPage * {
+              font-size: 12px !important;
+            }
+
+            .fixed {
+              display: none !important;
+            }
+
+            body > div {
+              margin-top: 0 !important;
+              padding-top: 0 !important;
+            }
+          }
+        `}</style>
+      </div>
+    </TeacherInitialsContext.Provider>
+  );
+};
+
+export default ReportsPage;
+
+// Inline style objects (mimic old CSS)
+// NOTE: All layout now comes from the active ReportLayoutJSON template.
+// These legacy style references remain only for the tahfiz/reports page.
+// This file uses activeLayout from /api/report-templates/active instead.
+
+// Adjust division based on the presence of F9 grades
+function adjustDivisionForF9(division: string, grades: string[]): string {
+  if (grades.includes('F9')) {
+    switch (division) {
+      case 'Division 1':
+        return 'Division 2';
+      case 'Division 2':
+        return 'Division 3';
+      case 'Division 3':
+        return 'Division 4';
+      case 'Division 4':
+        return 'Division U';
+      default:
+        return division; // Keep the same if already in the last division
+    }
+  }
+  return division; // No adjustment needed if no F9 grades
+}
+
+// Enhanced calculation function for marks with conditional conversion
+function calculateMarks(groupedResult: GroupedResult, isEndOfTerm: boolean, enableConversion: boolean = false) {
+  let midTermMarks = 0;
+  let endTermMarks = 0;
+
+  const m = groupedResult.midTermScore;
+  const e = groupedResult.endTermScore;
+  const r = groupedResult.regularScore;
+
+  if (enableConversion) {
+    // Apply conversion ONLY when button is clicked: MT (40→100), EOT (60→100)
+    if (m !== null) {
+      midTermMarks = Math.round((m / 100) * 40);
+    }
+    if (e !== null) {
+      endTermMarks = Math.round((e / 100) * 60);
+    }
+  } else {
+    if (m !== null) {
+      midTermMarks = Math.round(m);
+    }
+    if (e !== null) {
+      endTermMarks = Math.round(e);
+    }
+  }
+
+  // Total calculation: Only use end-term marks for EOT reports
+  const totalMarks = isEndOfTerm ? endTermMarks : midTermMarks;
+
+  return { midTermMarks, endTermMarks, totalMarks };
+}
+
+// Helper function to get comments based on division
+function getCommentsByDivision(division: string) {
+  const comments = {
+    'Division 1': {
+      classTeacher: 'Brilliant!! all my hopes are in you.',
+      dos: 'Outstanding Results, keep focused.',
+      headteacher: 'Great work done, keep it up.'
+    },
+    'Division 2': {
+      classTeacher: 'Promising results, keep more focused.',
+      dos: 'Very good performance, keep it up.',
+      headteacher: 'You are a first grade material, keep more focused.'
+    },
+    'Division 3': {
+      classTeacher: 'Improve and make it to the next grade.',
+      dos: 'Good effort, but more work needed.',
+      headteacher: 'You need to be active in discussions.'
+    },
+    'Division 4': {
+      classTeacher: 'You have to be very active in the discussion groups.',
+      dos: 'More effort is needed from you.',
+      headteacher: 'You are capable of improving, just keep focused.'
+    },
+    'Division U': {
+      classTeacher: 'More concentration is needed from you in order to perform better.',
+      dos: 'Work very hard to improve your performance.',
+      headteacher: 'Concentrate more on academics for a better performance.'
+    },
+    // Nursery grade comments
+    'A': {
+      classTeacher: 'Excellent performance! Keep up the great work.',
+      dos: 'Outstanding achievement in all areas.',
+      headteacher: 'Exceptional learner, continue to excel.'
+    },
+    'B': {
+      classTeacher: 'Very good work, aim for excellence.',
+      dos: 'Good progress, keep working hard.',
+      headteacher: 'Well done, you can achieve even more.'
+    },
+    'C': {
+      classTeacher: 'Satisfactory progress, more effort needed.',
+      dos: 'Average performance, room for improvement.',
+      headteacher: 'Work harder to improve your performance.'
+    },
+    'D': {
+      classTeacher: 'Needs more attention and practice.',
+      dos: 'Below average, requires extra support.',
+      headteacher: 'More focus and effort is needed.'
+    },
+    'E': {
+      classTeacher: 'Requires immediate intervention and support.',
+      dos: 'Needs significant improvement.',
+      headteacher: 'Extra help and attention required.'
+    }
+  };
+  
+  return comments[division as keyof typeof comments] || comments['Division U'];
+}
+
+// Comments section as a component
+function CommentsSection({
+  student,
+  division,
+  nextTermBegins,
+  handleNextTermChange,
+  layout,
+}: {
+  student: any;
+  division: string;
+  nextTermBegins: string;
+  handleNextTermChange: (newDate: string) => void;
+  layout: import('@/lib/reportTemplates').ReportLayoutJSON;
+}) {
+  const divisionComments = getCommentsByDivision(division);
+  const ribbonStyle = {
+    display: 'inline-block',
+    position: 'relative' as const,
+    background: layout.comments.ribbon.background,
+    color: layout.comments.ribbon.color,
+    fontWeight: 'bold',
+    padding: layout.comments.ribbon.padding,
+    borderRadius: layout.comments.ribbon.borderRadius,
+    marginRight: 18,
+    marginBottom: 8,
+    fontSize: 14,
+  };
+  const textStyle = {
+    color: layout.comments.text.color,
+    fontStyle: layout.comments.text.fontStyle as any,
+    borderBottom: layout.comments.text.borderBottom,
+  };
+  
+  return (
+    <div style={{ marginTop: '1%' }}>
+      Comments/Remarks
+      <div style={{ marginTop: 2 }}>
+        <div style={{ marginBottom: 10, width: '100%' }}>
+          <span style={ribbonStyle}>Class Teacher&apos;s Comment:</span>
+          <span style={textStyle}>{student.class_teacher_comment || divisionComments.classTeacher}</span>
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <span style={ribbonStyle}>DOS Comment:</span>
+          <span style={textStyle}>{student.dos_comment || divisionComments.dos}</span>
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <span style={ribbonStyle}>Headteacher&apos;s Comment:</span>
+          <span style={textStyle}>{student.headteacher_comment || divisionComments.headteacher}</span>
+        </div>
+        <div
+          contentEditable
+          suppressContentEditableWarning
+          style={{ textDecoration: 'underline dashed', marginTop: 12, cursor: 'text' }}
+          onBlur={(e) => handleNextTermChange(e.currentTarget.textContent?.trim() || nextTermBegins)}
+        >
+          {nextTermBegins}
+        </div>
+        <div style={{ textDecoration: 'underline dashed', marginTop: 5 }}>Next Term Begins</div>
+      </div>
+    </div>
+  );
+}
+
+// Grade table as a component
+function GradeTable({ layout }: { layout: import('@/lib/reportTemplates').ReportLayoutJSON }) {
+  const thStyle = {
+    background: layout.gradeTable.th.background,
+    border: layout.gradeTable.th.border,
+    textAlign: layout.gradeTable.th.textAlign as any,
+    padding: layout.gradeTable.th.padding,
+  };
+  const tdStyle = {
+    border: layout.gradeTable.td.border,
+    textAlign: layout.gradeTable.td.textAlign as any,
+    padding: layout.gradeTable.td.padding,
+  };
+  return (
+    <div style={{ marginTop: 20, width: '100%', fontSize: 13 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <tbody>
+          <tr>
+            <th style={thStyle}>GRADE</th>
+            <th style={thStyle}>D1</th>
+            <th style={thStyle}>D2</th>
+            <th style={thStyle}>C3</th>
+            <th style={thStyle}>C4</th>
+            <th style={thStyle}>C5</th>
+            <th style={thStyle}>C6</th>
+            <th style={thStyle}>P7</th>
+            <th style={thStyle}>P8</th>
+            <th style={thStyle}>F9</th>
+          </tr>
+          <tr>
+            <td style={tdStyle}>SCORE RANGE</td>
+            <td style={tdStyle}>90–100</td>
+            <td style={tdStyle}>80–89</td>
+            <td style={tdStyle}>70–79</td>
+            <td style={tdStyle}>60–69</td>
+            <td style={tdStyle}>50–59</td>
+            <td style={tdStyle}>44–49</td>
+            <td style={tdStyle}>40–43</td>
+            <td style={tdStyle}>34–39</td>
+            <td style={tdStyle}>0–33</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}

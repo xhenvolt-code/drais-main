@@ -1,0 +1,8 @@
+// .eslintrc.js
+module.exports = {
+  // ...existing config
+  rules: {
+    "@typescript-eslint/no-explicit-any": "off",
+    // keep other rules intact
+  },
+};
