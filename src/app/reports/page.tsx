@@ -106,6 +106,7 @@ const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'
 
 const ReportsPage: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('default');
+  const [showBack, setShowBack] = useState(true); // Show back button by default
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,6 +159,8 @@ const ReportsPage: React.FC = () => {
     };
 
     fetchReports();
+    // Optionally, hide back button if navigated directly
+    // setShowBack(window.history.length > 1);
   }, [selectedClass, selectedDateRange]);
 
   const getDefaultBranding = (): SchoolBranding => ({
@@ -220,24 +223,27 @@ const ReportsPage: React.FC = () => {
   const exportToPDF = async () => {
     setIsExporting(true);
     try {
+      // Ensure the report-content element exists
       const element = document.getElementById('report-content');
-      if (!element) return;
-
+      if (!element) {
+        alert('Report area not found. Please make sure the report is visible.');
+        setIsExporting(false);
+        return;
+      }
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         allowTaint: true
       });
-
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${reportData?.schoolInfo.name || 'School'}-Report-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Export to PDF failed:', error);
+      alert('Export to PDF failed. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -306,6 +312,7 @@ const ReportsPage: React.FC = () => {
               <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Attendance</th>
               <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Grade</th>
               <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Performance</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Payment Code</th>
             </tr>
           </thead>
           <tbody>
@@ -316,6 +323,7 @@ const ReportsPage: React.FC = () => {
                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-3">{student.attendance}%</td>
                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-3">{student.grade}</td>
                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-3">{student.performance}%</td>
+                <td className="border border-gray-300 dark:border-gray-600 px-4 py-3">{student.paymentCode || 'N/A'}</td>
               </tr>
             ))}
           </tbody>
@@ -525,6 +533,18 @@ const ReportsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      {/* Back Button */}
+      {showBack && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-blue-700 hover:text-blue-900 font-medium mb-4"
+          >
+            <ChevronDown style={{ transform: 'rotate(90deg)' }} className="w-5 h-5" />
+            Back
+          </button>
+        </div>
+      )}
       {/* Phase 22: Module intro card */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <ModuleIntroCard
