@@ -20,7 +20,7 @@ import { getCurrentTerm } from '@/lib/terms';
  *     student_ids: [1,2,3]  // optional – if omitted, all active students in class
  *   }
  *
- * B) Bulk enroll a list of students:
+ * B) Bulk enroll a list of students (simple mode):
  *   {
  *     mode: "enroll",
  *     class_id: 6,
@@ -29,6 +29,21 @@ import { getCurrentTerm } from '@/lib/terms';
  *     term_id: 9,
  *     enrollment_type: "new" | "continuing" | "transfer" | "repeat",
  *     student_ids: [1,2,3]
+ *   }
+ *
+ * C) Bulk enroll multiple students with full context (study mode, curriculum, program):
+ *   {
+ *     mode: "multiple_students",
+ *     student_ids: [1,2,3],
+ *     class_id: 6,
+ *     stream_id: 2,              // optional
+ *     academic_year_id: 3,
+ *     term_id: 9,
+ *     study_mode_id: 1,          // required
+ *     curriculum_id: 2,          // required
+ *     program_id: 5,             // required
+ *     enrollment_type: "new" | "continuing" | "repeat",
+ *     close_previous: true       // optional – defaults to true
  *   }
  */
 export async function POST(req: NextRequest) {
@@ -41,12 +56,18 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { mode } = body;
 
-  if (mode !== 'promote' && mode !== 'enroll') {
-    return NextResponse.json({ error: 'mode must be "promote" or "enroll"' }, { status: 400 });
+  if (mode !== 'promote' && mode !== 'enroll' && mode !== 'multiple_students') {
+    return NextResponse.json({ error: 'mode must be "promote", "enroll", or "multiple_students"' }, { status: 400 });
   }
 
   const conn = await getConnection();
   try {
+    // Handle multiple_students mode (new bulk enrollment with full context)
+    if (mode === 'multiple_students') {
+      return await handleMultipleStudentsMode(conn, session, body, schoolId, req);
+    }
+
+    // Handle existing promote/enroll modes
     // Resolve term
     let termId: number = body.term_id;
     if (!termId) {
@@ -167,4 +188,136 @@ export async function POST(req: NextRequest) {
   } finally {
     await conn.end();
   }
+}
+
+/**
+ * Handle multiple_students mode: enroll many students with full enrollment context
+ * (study mode, curriculum, program, etc.)
+ */
+async function handleMultipleStudentsMode(
+  conn: any,
+  session: any,
+  body: any,
+  schoolId: number,
+  req: NextRequest
+) {
+  const {
+    student_ids,
+    class_id,
+    stream_id,
+    academic_year_id,
+    term_id,
+    study_mode_id,
+    curriculum_id,
+    program_id,
+    enrollment_type,
+    close_previous,
+  } = body;
+
+  // Validate required fields
+  if (!Array.isArray(student_ids) || student_ids.length === 0) {
+    return NextResponse.json({
+      success: false,
+      message: 'student_ids must be a non-empty array',
+      error: { code: 'MISSING_STUDENTS' },
+    }, { status: 400 });
+  }
+
+  if (!class_id || !academic_year_id || !term_id || !study_mode_id || !curriculum_id || !program_id) {
+    return NextResponse.json({
+      success: false,
+      message: 'All of class_id, academic_year_id, term_id, study_mode_id, curriculum_id, and program_id are required',
+      error: { code: 'MISSING_FIELDS' },
+    }, { status: 400 });
+  }
+
+  // Validate entities exist
+  const [classRows]: any = await conn.execute(
+    'SELECT id, name FROM classes WHERE id = ? AND school_id = ? LIMIT 1',
+    [class_id, schoolId]
+  );
+  if (classRows.length === 0) {
+    return NextResponse.json({ success: false, message: 'Class not found', error: { code: 'CLASS_NOT_FOUND' } }, { status: 404 });
+  }
+  const className = classRows[0].name;
+
+  const [progRows]: any = await conn.execute(
+    'SELECT id, name FROM programs WHERE id = ? AND school_id = ? AND is_active = 1 LIMIT 1',
+    [program_id, schoolId]
+  );
+  if (progRows.length === 0) {
+    return NextResponse.json({ success: false, message: 'Program not found or inactive', error: { code: 'PROGRAM_NOT_FOUND' } }, { status: 404 });
+  }
+  const programName = progRows[0].name;
+
+  // Enroll each student
+  const results: any[] = [];
+  let successful = 0;
+
+  for (const studentId of student_ids) {
+    try {
+      await conn.execute('START TRANSACTION');
+
+      // Check student exists
+      const [studentRows]: any = await conn.execute(
+        'SELECT s.id, p.first_name, p.last_name FROM students s JOIN people p ON s.person_id = p.id WHERE s.id = ? AND s.school_id = ? AND s.deleted_at IS NULL LIMIT 1',
+        [studentId, schoolId]
+      );
+      if (studentRows.length === 0) {
+        await conn.execute('ROLLBACK');
+        results.push({ student_id: studentId, success: false, message: 'Student not found' });
+        continue;
+      }
+      const studentName = `${studentRows[0].first_name} ${studentRows[0].last_name}`;
+
+      // Close previous if requested
+      if (close_previous !== false) {
+        await conn.execute(
+          `UPDATE enrollments SET status = 'completed', end_date = CURDATE(), end_reason = 'promoted', updated_at = NOW()
+           WHERE student_id = ? AND school_id = ? AND status = 'active'`,
+          [studentId, schoolId]
+        );
+      }
+
+      // Insert new enrollment
+      const [result]: any = await conn.execute(
+        `INSERT INTO enrollments
+           (school_id, student_id, class_id, stream_id, academic_year_id, term_id,
+            study_mode_id, curriculum_id, program_id, enrollment_type, status, enrollment_date, enrolled_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', CURDATE(), NOW())`,
+        [
+          schoolId, studentId, class_id, stream_id ?? null,
+          academic_year_id, term_id, study_mode_id,
+          curriculum_id, program_id,
+          enrollment_type ?? 'continuing',
+        ]
+      );
+      const enrollmentId: number = result.insertId;
+
+      // Insert enrollment_programs
+      await conn.execute(
+        'INSERT IGNORE INTO enrollment_programs (enrollment_id, program_id) VALUES (?, ?)',
+        [enrollmentId, program_id]
+      );
+
+      await conn.execute('COMMIT');
+
+      results.push({ student_id: studentId, success: true, enrollment_id: enrollmentId, message: `${studentName} enrolled successfully` });
+      successful++;
+    } catch (err: any) {
+      try { await conn.execute('ROLLBACK'); } catch { /* ignore */ }
+      results.push({ student_id: studentId, success: false, message: err.message || 'Enrollment failed' });
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: `Bulk enrollment complete: ${successful}/${student_ids.length} students enrolled successfully`,
+    data: {
+      successful,
+      failed: student_ids.length - successful,
+      total: student_ids.length,
+      results,
+    },
+  });
 }
