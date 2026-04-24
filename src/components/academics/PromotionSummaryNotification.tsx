@@ -58,11 +58,16 @@ const PromotionSummaryNotification: React.FC<PromotionSummaryProps> = ({ data, o
   const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
 
   // Defensive defaults: ensure student arrays are never null
-  const safeStudents = {
+  const safeStudents = data ? {
     promoted: data.students?.promoted || [],
     expectedToImprove: data.students?.expectedToImprove || [],
     advisedToRepeat: data.students?.advisedToRepeat || [],
     notApplicable: data.students?.notApplicable || [],
+  } : {
+    promoted: [],
+    expectedToImprove: [],
+    advisedToRepeat: [],
+    notApplicable: [],
   };
 
   if (!data.isThirdTerm) {
