@@ -21,12 +21,14 @@ interface Props {
 }
 
 // ── Inline SVG barcode (no API required) ─────────────────────────────────────
-function InlineBarcode({ value, width = 36, height = 52 }: { value: string; width?: number; height?: number }) {
+function InlineBarcode({ value, width = 36, height = 52 }: { value: string | null | undefined; width?: number; height?: number }) {
   const pattern = [3, 1, 2, 1, 3, 1, 2, 2, 1, 2];
   const bars: React.ReactNode[] = [];
   let x = 0;
+  // Guard against null/undefined value
+  const safeValue = value || '';
   // Use every character, map char-code mod 10 to a bar width
-  for (let i = 0; i < Math.min(value.length, 18); i++) {
+  for (let i = 0; i < Math.min(safeValue.length, 18); i++) {
     const code = value.charCodeAt(i) % 10;
     const w = pattern[code];
     bars.push(<rect key={i} x={x} y={0} width={w} height={50} fill="#000" />);
