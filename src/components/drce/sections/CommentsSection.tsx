@@ -35,7 +35,7 @@ export function CommentsSection({ section, theme, ctx }: Props) {
   const ribbonStyle = resolveCommentRibbonStyle(style);
   const textStyle = resolveCommentTextStyle(style);
 
-  const visibleItems = [...section.items]
+  const visibleItems = [...(section.items || [])]
     .filter(i => i.visible)
     .sort((a, b) => a.order - b.order);
 

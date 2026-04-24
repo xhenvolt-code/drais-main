@@ -17,7 +17,7 @@ export function AssessmentSection({ section, theme, ctx }: Props) {
   const style = section.style as Record<string, unknown>;
   const layout = String(style.layout ?? 'table');
 
-  const visibleFields = [...section.fields]
+  const visibleFields = [...(section.fields || [])]
     .filter(f => f.visible)
     .sort((a, b) => a.order - b.order);
 

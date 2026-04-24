@@ -22,7 +22,7 @@ export function ResultsTableSection({ section, ctx }: Props) {
   const { style } = section;
   const tableStyle = resolveTableStyle(style);
 
-  const visibleCols = [...section.columns]
+  const visibleCols = [...(section.columns || [])]
     .filter(c => c.visible)
     .sort((a, b) => a.order - b.order);
 
