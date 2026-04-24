@@ -56,6 +56,9 @@ export function StudentInfoSection({ section, ctx }: Props) {
   if (!section.visible) return null;
   const { style } = section;
 
+  // Guard against null student data
+  const student = ctx.student || {};
+
   // Strip outer box border — we don't want a border around the whole student section
   const boxStyle    = { ...resolveStudentInfoBoxStyle(style), border: 'none' };
   const labelStyle  = resolveStudentInfoLabelStyle(style);
@@ -108,38 +111,38 @@ export function StudentInfoSection({ section, ctx }: Props) {
                 padding: '2px 2px',
                 borderRight: '1px solid #eee',
               }}>
-                {/* Barcode + student number grouped so they rotate together */}
-                <div style={{
-                  display: 'inline-block',
-                  transform: `rotate(${barcodeRotation}deg)`,
-                  transformOrigin: 'center center',
-                }}>
-                  <InlineBarcode value={ctx.student.admissionNo} width={barcodeWidth} height={barcodeHeight} />
-                  <span style={{ fontSize: 7, display: 'block', marginTop: 1, wordBreak: 'break-all', color: '#444', textAlign: 'center' }}>
-                    {ctx.student.admissionNo}
-                  </span>
-                </div>
+                 {/* Barcode + student number grouped so they rotate together */}
+                 <div style={{
+                   display: 'inline-block',
+                   transform: `rotate(${barcodeRotation}deg)`,
+                   transformOrigin: 'center center',
+                 }}>
+                   <InlineBarcode value={student.admissionNo} width={barcodeWidth} height={barcodeHeight} />
+                   <span style={{ fontSize: 7, display: 'block', marginTop: 1, wordBreak: 'break-all', color: '#444', textAlign: 'center' }}>
+                     {student.admissionNo || ''}
+                   </span>
+                 </div>
               </td>
             )}
 
             {/* ── Photo column ──────────────────────────────────── */}
-            {showPhoto && (
-              <td style={{ width: 98, textAlign: 'center', verticalAlign: 'middle', padding: 4 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={ctx.student.photoUrl || '/default-avatar.png'}
-                  alt={ctx.student.fullName}
-                  style={{
-                    width: 90, height: 100,
-                    objectFit: 'cover',
-                    border: '1px solid #000',
-                    display: 'block',
-                    margin: 'auto',
-                  }}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/default-avatar.png'; }}
-                />
-              </td>
-            )}
+             {showPhoto && (
+               <td style={{ width: 98, textAlign: 'center', verticalAlign: 'middle', padding: 4 }}>
+                 {/* eslint-disable-next-line @next/next/no-img-element */}
+                 <img
+                   src={student.photoUrl || '/default-avatar.png'}
+                   alt={student.fullName || 'Student'}
+                   style={{
+                     width: 90, height: 100,
+                     objectFit: 'cover',
+                     border: '1px solid #000',
+                     display: 'block',
+                     margin: 'auto',
+                   }}
+                   onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/default-avatar.png'; }}
+                 />
+               </td>
+             )}
 
             {/* ── Field-grid column ─────────────────────────────── */}
             <td style={{ padding: 0, verticalAlign: 'top' }}>
