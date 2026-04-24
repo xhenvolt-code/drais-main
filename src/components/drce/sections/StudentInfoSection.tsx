@@ -73,7 +73,7 @@ export function StudentInfoSection({ section, ctx }: Props) {
   // Cell width adjusts to barcode width with some padding
   const barcodeCellWidth = barcodeWidth + 10;
 
-  const visibleFields = [...section.fields]
+  const visibleFields = [...(section.fields || [])]
     .filter(f => f.visible)
     .sort((a, b) => a.order - b.order);
 
