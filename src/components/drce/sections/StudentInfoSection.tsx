@@ -29,7 +29,7 @@ function InlineBarcode({ value, width = 36, height = 52 }: { value: string | nul
   const safeValue = value || '';
   // Use every character, map char-code mod 10 to a bar width
   for (let i = 0; i < Math.min(safeValue.length, 18); i++) {
-    const code = value.charCodeAt(i) % 10;
+    const code = safeValue.charCodeAt(i) % 10;
     const w = pattern[code];
     bars.push(<rect key={i} x={x} y={0} width={w} height={50} fill="#000" />);
     x += w + 1.5;
