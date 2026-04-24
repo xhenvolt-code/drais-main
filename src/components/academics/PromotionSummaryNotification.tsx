@@ -57,6 +57,14 @@ const PromotionSummaryNotification: React.FC<PromotionSummaryProps> = ({ data, o
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
 
+  // Defensive defaults: ensure student arrays are never null
+  const safeStudents = {
+    promoted: data.students?.promoted || [],
+    expectedToImprove: data.students?.expectedToImprove || [],
+    advisedToRepeat: data.students?.advisedToRepeat || [],
+    notApplicable: data.students?.notApplicable || [],
+  };
+
   if (!data.isThirdTerm) {
     return (
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
@@ -187,21 +195,21 @@ const PromotionSummaryNotification: React.FC<PromotionSummaryProps> = ({ data, o
       </motion.div>
 
       {/* Promoted Students */}
-      <ExpandableSection
-        title="✅ Promoted Learners"
-        subtitle={`Division I, II, or III - Ready for next level`}
-        count={data.students.promoted.length}
-        icon={CheckCircle2}
-        color="green"
-        isExpanded={expandedSection === 'promoted'}
-        onToggle={() => toggleSection('promoted')}
-      >
-        <StudentList
-          students={data.students.promoted}
-          selectedStudents={selectedStudents}
-          onToggleSelection={toggleStudentSelection}
-          showSelection={true}
-        />
+        <ExpandableSection
+          title="✅ Promoted Learners"
+          subtitle={`Division I, II, or III - Ready for next level`}
+          count={safeStudents.promoted.length}
+          icon={CheckCircle2}
+          color="green"
+          isExpanded={expandedSection === 'promoted'}
+          onToggle={() => toggleSection('promoted')}
+        >
+          <StudentList
+            students={safeStudents.promoted}
+            selectedStudents={selectedStudents}
+            onToggleSelection={toggleStudentSelection}
+            showSelection={true}
+          />
         {selectedStudents.size > 0 && (
           <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-between">
             <span className="text-sm font-medium text-green-800 dark:text-green-200">
@@ -219,37 +227,37 @@ const PromotionSummaryNotification: React.FC<PromotionSummaryProps> = ({ data, o
       </ExpandableSection>
 
       {/* Expected to Improve */}
-      <ExpandableSection
-        title="⚠️ Expected to Improve"
-        subtitle="Division IV - Promoted with conditions"
-        count={data.students.expectedToImprove.length}
-        icon={AlertTriangle}
-        color="yellow"
-        isExpanded={expandedSection === 'improve'}
-        onToggle={() => toggleSection('improve')}
-      >
-        <StudentList
-          students={data.students.expectedToImprove}
-          selectedStudents={selectedStudents}
-          onToggleSelection={toggleStudentSelection}
-        />
+        <ExpandableSection
+          title="⚠️ Expected to Improve"
+          subtitle="Division IV - Promoted with conditions"
+          count={safeStudents.expectedToImprove.length}
+          icon={AlertTriangle}
+          color="yellow"
+          isExpanded={expandedSection === 'improve'}
+          onToggle={() => toggleSection('improve')}
+        >
+          <StudentList
+            students={safeStudents.expectedToImprove}
+            selectedStudents={selectedStudents}
+            onToggleSelection={toggleStudentSelection}
+          />
       </ExpandableSection>
 
       {/* Advised to Repeat */}
-      <ExpandableSection
-        title="❌ Advised to Repeat"
-        subtitle="Below passing standard - Requires class repetition"
-        count={data.students.advisedToRepeat.length}
-        icon={XCircle}
-        color="red"
-        isExpanded={expandedSection === 'repeat'}
-        onToggle={() => toggleSection('repeat')}
-      >
-        <StudentList
-          students={data.students.advisedToRepeat}
-          selectedStudents={selectedStudents}
-          onToggleSelection={toggleStudentSelection}
-        />
+        <ExpandableSection
+          title="❌ Advised to Repeat"
+          subtitle="Below passing standard - Requires class repetition"
+          count={safeStudents.advisedToRepeat.length}
+          icon={XCircle}
+          color="red"
+          isExpanded={expandedSection === 'repeat'}
+          onToggle={() => toggleSection('repeat')}
+        >
+          <StudentList
+            students={safeStudents.advisedToRepeat}
+            selectedStudents={selectedStudents}
+            onToggleSelection={toggleStudentSelection}
+          />
       </ExpandableSection>
     </div>
   );

@@ -344,9 +344,11 @@ const ReportsPage = () => {
   }, []);
 
   // Filtered terms based on selected academic year
-  const filteredTerms = filters.academicYearId
-    ? termsData.filter(t => String(t.academic_year_id) === filters.academicYearId)
-    : termsData;
+  const filteredTerms = (Array.isArray(termsData) && termsData.length > 0)
+    ? (filters.academicYearId 
+        ? termsData.filter(t => t && String(t.academic_year_id) === filters.academicYearId)
+        : termsData)
+    : [];
 
   useEffect(() => {
     setLoading(true);
@@ -482,26 +484,35 @@ const ReportsPage = () => {
   const filteredClassGroups = useMemo((): Record<string, ClassGroup> => {
     let groups = JSON.parse(JSON.stringify(classGroups)) as Record<string, ClassGroup>; // Deep clone to avoid mutations
     
+    // Ensure groups is a valid object
+    if (!groups || typeof groups !== 'object') {
+      return {};
+    }
+    
     if (filters.classId) {
       groups = Object.fromEntries(
-        Object.entries(groups).filter(([_, v]) =>
-          String(v.className).toLowerCase() === String(filters.classId).toLowerCase() ||
-          v.students.some(s => String(s.class_name).toLowerCase() === String(filters.classId).toLowerCase())
-        )
+        Object.entries(groups).filter(([_, v]) => {
+          if (!v || !Array.isArray(v.students)) return false;
+          return String(v.className || '').toLowerCase() === String(filters.classId).toLowerCase() ||
+            v.students.some(s => s && String(s.class_name || '').toLowerCase() === String(filters.classId).toLowerCase());
+        })
       );
     }
     
     Object.values(groups).forEach(g => {
+      if (!g || !Array.isArray(g.students)) return;
+      
       g.students = g.students.filter(s => {
+        if (!s || !Array.isArray(s.results)) return false;
         // Ensure student has valid results
-        if (!s.results || s.results.length === 0) return false;
+        if (s.results.length === 0) return false;
         
         // Term filter - only apply if term data exists
         if (filters.term) {
-          const hasTermData = s.results.some((r: Result) => r.term || r.term_name);
+          const hasTermData = s.results.some((r: Result) => r && (r.term || r.term_name));
           if (hasTermData) {
             const matchesTerm = s.results.some((r: Result) =>
-              String(r.term || r.term_name || '').toLowerCase() === filters.term.toLowerCase()
+              r && String(r.term || r.term_name || '').toLowerCase() === filters.term.toLowerCase()
             );
             if (!matchesTerm) return false;
           }
@@ -516,11 +527,11 @@ const ReportsPage = () => {
             // 1. Any result with "end" in the result type, OR
             // 2. Both mid-term and end-term results (for complete End of Term reports)
             const hasEndTermResult = s.results.some((r: Result) =>
-              String(r.result_type_name || r.results_type || '').toLowerCase().includes('end')
+              r && String(r.result_type_name || r.results_type || '').toLowerCase().includes('end')
             );
             
             const hasMidTermResult = s.results.some((r: Result) =>
-              String(r.result_type_name || r.results_type || '').toLowerCase().includes('mid')
+              r && String(r.result_type_name || r.results_type || '').toLowerCase().includes('mid')
             );
             
             // Include if has end-term results OR has both mid and end components
@@ -528,7 +539,7 @@ const ReportsPage = () => {
           } else {
             // For other result types, exact match
             const matchesResultType = s.results.some((r: Result) =>
-              String(r.result_type_name || r.results_type || '').toLowerCase() === resultTypeFilter
+              r && String(r.result_type_name || r.results_type || '').toLowerCase() === resultTypeFilter
             );
             if (!matchesResultType) return false;
           }
@@ -536,8 +547,8 @@ const ReportsPage = () => {
         
         // Student name/ID filter
         if (filters.student) {
-          const name = `${s.first_name} ${s.last_name}`.toLowerCase();
-          if (!name.includes(filters.student.toLowerCase()) && String(s.student_id) !== filters.student) {
+          const name = `${s.first_name || ''} ${s.last_name || ''}`.toLowerCase();
+          if (!name.includes(filters.student.toLowerCase()) && String(s.student_id || '') !== filters.student) {
             return false;
           }
         }
@@ -547,7 +558,7 @@ const ReportsPage = () => {
     });
     
     // Remove empty classes
-    groups = Object.fromEntries(Object.entries(groups).filter(([_, v]) => v.students.length > 0));
+    groups = Object.fromEntries(Object.entries(groups).filter(([_, v]) => v && Array.isArray(v.students) && v.students.length > 0));
     return groups;
   }, [classGroups, filters]);
 
@@ -576,23 +587,35 @@ const ReportsPage = () => {
   const classGroupsWithPositions = useMemo((): Record<string, ClassGroup> => {
     const groups: Record<string, ClassGroup> = JSON.parse(JSON.stringify(filteredClassGroups));
 
+    // Ensure groups is a valid object
+    if (!groups || typeof groups !== 'object') {
+      return {};
+    }
+
     // Process each class independently for proper class-based positioning
     Object.values(groups).forEach((classGroup: ClassGroup) => {
+      // Ensure classGroup and its students are valid arrays
+      if (!classGroup || !Array.isArray(classGroup.students)) {
+        return;
+      }
+
       // Filter results per student based on current filters
       classGroup.students.forEach((student: Student) => {
-        student.results = (student.results || []).filter((r: Result) => {
+        if (!student) return;
+        student.results = (Array.isArray(student.results) ? student.results : []).filter((r: Result) => {
           // Validate result data
-          if (!r.score || isNaN(parseFloat(String(r.score)))) return false;
+          if (!r || r.score === null || r.score === undefined || isNaN(parseFloat(String(r.score)))) return false;
           return matchesFilters(r);
         });
       });
        
       // Remove students with no valid results after filtering
-      classGroup.students = classGroup.students.filter((s: Student) => s.results && s.results.length > 0);
+      classGroup.students = (Array.isArray(classGroup.students) ? classGroup.students : []).filter((s: Student) => s && s.results && Array.isArray(s.results) && s.results.length > 0);
       
       // Calculate total marks for each student in this class
       classGroup.students.forEach((student: Student) => {
-        const validScores = (student.results || [])
+        if (!student) return;
+        const validScores = (Array.isArray(student.results) ? student.results : [])
           .map((r: Result) => parseFloat(String(r.score || 0)))
           .filter(score => !isNaN(score) && score >= 0);
         
@@ -603,29 +626,31 @@ const ReportsPage = () => {
       
       // Sort students by total marks within this class (highest first)
       classGroup.students.sort((a: Student, b: Student) => {
-        const totalA = a.totalMarks || 0;
-        const totalB = b.totalMarks || 0;
+        const totalA = a && a.totalMarks ? a.totalMarks : 0;
+        const totalB = b && b.totalMarks ? b.totalMarks : 0;
         if (totalB !== totalA) return totalB - totalA;
         
         // If total marks are equal, sort by average
-        const avgA = a.averageMarks || 0;
-        const avgB = b.averageMarks || 0;
+        const avgA = a && a.averageMarks ? a.averageMarks : 0;
+        const avgB = b && b.averageMarks ? b.averageMarks : 0;
         if (avgB !== avgA) return avgB - avgA;
         
         // If still equal, sort by name
-        return (a.last_name || '').localeCompare(b.last_name || '');
+        return (a && a.last_name ? a.last_name : '').localeCompare(b && b.last_name ? b.last_name : '');
       });
       
       // Assign positions within this class only
       classGroup.students.forEach((student: Student, index: number) => {
-        student.position = index + 1;
-        student.totalInClass = classGroup.students.length; // Class-specific total
+        if (student) {
+          student.position = index + 1;
+          student.totalInClass = classGroup.students.length; // Class-specific total
+        }
       });
     });
 
     // Remove classes that have no students after processing
     Object.keys(groups).forEach((className) => {
-      if (!groups[className].students.length) {
+      if (!groups[className] || !Array.isArray(groups[className].students) || !groups[className].students.length) {
         delete groups[className];
       }
     });
@@ -637,7 +662,11 @@ const ReportsPage = () => {
   function splitSubjects(results: any[]) {
     const principal: any[] = [];
     const others: any[] = [];
+    if (!Array.isArray(results)) {
+      return { principal, others };
+    }
     results.forEach(r => {
+      if (!r) return; // Skip null/undefined items
       const st = (r.subject_type ?? 'core').toLowerCase();
       if (st === 'core') principal.push(r);
       else others.push(r);
@@ -647,9 +676,15 @@ const ReportsPage = () => {
 
   // Enhanced helper to group results by subject with better error handling
   function groupResultsBySubject(results: Result[]): GroupedResult[] {
+    if (!Array.isArray(results) || results.length === 0) {
+      return [];
+    }
+
     const grouped: Record<string, GroupedResult> = {};
     
     results.forEach((result) => {
+      if (!result) return; // Skip null/undefined results
+      
       const subjectKey = String(result.subject_id || result.subject_name);
       if (!subjectKey) return; // Skip invalid results
       
@@ -691,16 +726,16 @@ const ReportsPage = () => {
     });
     
     // Cross-reference logic for missing scores
-    const allSubjects = new Set(results.map(r => String(r.subject_id || r.subject_name)));
+    const allSubjects = new Set(results.map(r => r ? String(r.subject_id || r.subject_name) : null).filter(Boolean));
     
     allSubjects.forEach(subjectKey => {
-      if (!grouped[subjectKey]) return;
+      if (!subjectKey || !grouped[subjectKey]) return;
       
-      const subjectResults = results.filter(r => String(r.subject_id || r.subject_name) === subjectKey);
+      const subjectResults = results.filter(r => r && String(r.subject_id || r.subject_name) === subjectKey);
       
       if (grouped[subjectKey].midTermScore === null) {
         const midTermResult = subjectResults.find(r => 
-          (r.result_type_name || r.results_type || '').toLowerCase().includes('mid')
+          r && (r.result_type_name || r.results_type || '').toLowerCase().includes('mid')
         );
         if (midTermResult) {
           grouped[subjectKey].midTermScore = parseFloat(String(midTermResult.score || 0));
@@ -709,7 +744,7 @@ const ReportsPage = () => {
       
       if (grouped[subjectKey].endTermScore === null) {
         const endTermResult = subjectResults.find(r => 
-          (r.result_type_name || r.results_type || '').toLowerCase().includes('end')
+          r && (r.result_type_name || r.results_type || '').toLowerCase().includes('end')
         );
         if (endTermResult) {
           grouped[subjectKey].endTermScore = parseFloat(String(endTermResult.score || 0));
@@ -717,7 +752,7 @@ const ReportsPage = () => {
       }
     });
     
-    return Object.values(grouped).filter(item => item.subject_name);
+    return Object.values(grouped).filter(item => item && item.subject_name);
   }
 
   // Helper function to check if student is in Nursery section
@@ -1117,8 +1152,8 @@ const ReportsPage = () => {
 
           <div className="ml-auto flex items-center gap-2 text-sm text-gray-500">
             {loading && <span className="inline-flex items-center gap-1"><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Loading...</span>}
-            {!loading && Object.keys(classGroupsWithPositions).length > 0 && (
-              <span>{Object.values(classGroupsWithPositions).reduce((sum, g) => sum + g.students.length, 0)} students in {Object.keys(classGroupsWithPositions).length} class(es)</span>
+            {!loading && classGroupsWithPositions && Object.keys(classGroupsWithPositions).length > 0 && (
+              <span>{Object.values(classGroupsWithPositions).reduce((sum, g) => sum + (g && Array.isArray(g.students) ? g.students.length : 0), 0)} students in {Object.keys(classGroupsWithPositions).length} class(es)</span>
             )}
           </div>
           </div>
@@ -1138,15 +1173,17 @@ const ReportsPage = () => {
               <p className="text-sm mt-1">Enter results in the Results page first, then come back here to generate reports.</p>
             </div>
           )}
-          {Object.values(classGroupsWithPositions).map((classGroup: any) => (
-            <div key={classGroup.className}>
-              <div className="classHeading text-2xl font-bold text-center my-0">{classGroup.className}</div>
-              {classGroup.students.map((student: any) => {
+          {classGroupsWithPositions && Object.values(classGroupsWithPositions).map((classGroup: any) => (
+            <div key={classGroup && classGroup.className ? classGroup.className : Math.random()}>
+              <div className="classHeading text-2xl font-bold text-center my-0">{classGroup && classGroup.className ? classGroup.className : 'Unknown Class'}</div>
+              {classGroup && Array.isArray(classGroup.students) && classGroup.students.map((student: any) => {
+                if (!student) return null;
                 // ── Phase 2: apply curriculum filter to results client-side
                 // The dual template always receives all results (it splits them internally).
                 const isCurriculumFiltered = selectedTemplate !== 'dual' && curriculum !== 'all';
                 const filteredStudentResults: Result[] = isCurriculumFiltered
-                  ? (student.results || []).filter((r: Result) => {
+                  ? (Array.isArray(student.results) ? student.results : []).filter((r: Result) => {
+                      if (!r) return false;
                       const type = (r.subject_type || '').toLowerCase();
                       if (curriculum === 'secular') {
                         return type === 'secular' || (!type.includes('theol') && !type.includes('islam') && !type.includes('religion') && type !== 'theology');
