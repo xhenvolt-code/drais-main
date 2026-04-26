@@ -158,6 +158,7 @@ const ReportsPage = () => {
   const [nextTermBegins, setNextTermBegins] = useState('');
   const [enableMarkConversion, setEnableMarkConversion] = useState(false);
   const defaultLogoInputRef = useRef<HTMLInputElement>(null);
+  const reportExportRef = useRef<HTMLDivElement>(null);
   const [defaultLogoUploading, setDefaultLogoUploading] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({
     name: '',
@@ -877,9 +878,15 @@ const ReportsPage = () => {
 
   // Export reports to PDF
   const exportToPDF = async (): Promise<void> => {
-    const reportArea = document.querySelector('.p-4') as HTMLElement; // Ensure this targets the correct container
+    const reportArea = reportExportRef.current;
     if (!reportArea) {
       window.alert('Report area not found!');
+      return;
+    }
+
+    const hasRenderedReports = reportArea.querySelector('.reportPage, .dual-report-page, [data-report-page="true"]');
+    if (!hasRenderedReports) {
+      window.alert('No reports are currently available to export.');
       return;
     }
 
@@ -1158,7 +1165,11 @@ const ReportsPage = () => {
           </div>
           </div>
         </div>
-        <div>
+        <div
+          ref={reportExportRef}
+          id="academic-reports-export-area"
+          data-report-export-root="true"
+        >
           {!loading && Object.keys(classGroupsWithPositions).length === 0 && allResults.length > 0 && (
             <div className="no-print text-center py-12 text-gray-500">
               <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -1366,6 +1377,8 @@ const ReportsPage = () => {
                   return (
                     <div
                       key={student.student_id}
+                      className="reportPage"
+                      data-report-page="true"
                       style={{ pageBreakAfter: 'always', display: 'flex', justifyContent: 'center' }}
                     >
                       <DRCEDocumentRenderer
@@ -1408,7 +1421,7 @@ const ReportsPage = () => {
                 const isArabicMode = selectedTemplate === 'arabic' || selectedTemplate === 'arabic-clone';
 
                 return (
-                  <div key={student.student_id} style={{
+                  <div key={student.student_id} className="reportPage" data-report-page="true" style={{
                     pageBreakAfter: 'always',
                     background: activeLayout.page.background,
                     boxShadow: activeLayout.page.boxShadow,
