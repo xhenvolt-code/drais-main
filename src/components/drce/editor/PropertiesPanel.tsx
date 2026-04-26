@@ -45,10 +45,21 @@ function ColorInput({ value, onChange }: { value: string; onChange: (v: string) 
 }
 
 function NumberInput({ value, onChange, min, max, step }: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number;
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+  min?: number; max?: number; step?: number;
 }) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val === '') {
+      onChange(undefined);
+    } else {
+      const num = Number(val);
+      onChange(isNaN(num) ? undefined : num);
+    }
+  };
   return (
-    <input type="number" value={value} onChange={e => onChange(Number(e.target.value))}
+    <input type="number" value={value ?? ''} onChange={handleChange}
       min={min} max={max} step={step ?? 1}
       className="w-full text-xs border border-gray-200 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-800" />
   );
@@ -274,23 +285,243 @@ function HeaderPanel({ section, onMutate }: { section: DRCESection & { type: 'he
   const set = (path: string, value: unknown) => onMutate({ type: 'SET_SECTION_STYLE', sectionId: section.id, path, value });
   const { style } = section;
   return (
-    <div className="p-3">
+    <div className="p-3 space-y-4">
+      {/* Layout */}
       <PanelSection title="Layout">
         <Row label="Layout">
           <SelectInput value={style.layout} onChange={v => set('layout', v)} options={[
             { label: 'Three Column', value: 'three-column' },
             { label: 'Centered', value: 'centered' },
             { label: 'Left Logo', value: 'left-logo' },
+            { label: 'Flex Grid (Custom)', value: 'flex-grid' },
+            { label: 'Custom', value: 'custom' },
           ]} />
         </Row>
-        <Row label="Padding bottom"><NumberInput value={style.paddingBottom} onChange={v => set('paddingBottom', v)} min={0} max={40} /></Row>
-        <Row label="Opacity"><NumberInput value={style.opacity} onChange={v => set('opacity', v)} min={0.1} max={1} step={0.05} /></Row>
-        <Row label="Border bottom"><TextInput value={style.borderBottom} onChange={v => set('borderBottom', v)} placeholder="1px solid #eee" /></Row>
+        <Row label="Padding bottom"><NumberInput value={Number(style.paddingBottom ?? 0)} onChange={v => set('paddingBottom', Number(v))} min={0} max={40} /></Row>
+        <Row label="Opacity"><NumberInput value={Number(style.opacity ?? 1)} onChange={v => set('opacity', v)} min={0.1} max={1} step={0.05} /></Row>
+        <Row label="Border bottom"><TextInput value={String(style.borderBottom ?? '')} onChange={v => set('borderBottom', v)} placeholder="1px solid #eee" /></Row>
+        <Row label="Gap (px)"><NumberInput value={Number(style.gap ?? 12)} onChange={v => set('gap', v)} min={0} max={48} /></Row>
       </PanelSection>
-      <PanelSection title="Logo Size">
-        <Row label="Width (px)"><NumberInput value={style.logoWidth ?? 64} onChange={v => set('logoWidth', v)} min={24} max={200} /></Row>
-        <Row label="Height (px)"><NumberInput value={style.logoHeight ?? 64} onChange={v => set('logoHeight', v)} min={24} max={200} /></Row>
+
+      {/* Header border */}
+      <PanelSection title="Header Border" defaultOpen={false}>
+        <Row label="Enable border">
+          <input type="checkbox" checked={style.headerBorder?.enabled ?? false} onChange={e => set('headerBorder', { ...(style.headerBorder as any), enabled: e.target.checked })} className="w-4 h-4" />
+        </Row>
+        {style.headerBorder?.enabled && (
+          <>
+            <Row label="Color"><ColorInput value={style.headerBorder.color ?? '#ccc'} onChange={v => set('headerBorder', { ...(style.headerBorder as any), color: v })} /></Row>
+            <Row label="Width"><NumberInput value={Number(style.headerBorder.width ?? 1)} onChange={v => set('headerBorder', { ...(style.headerBorder as any), width: Number(v) })} min={1} max={5} /></Row>
+            <Row label="Style">
+              <SelectInput value={style.headerBorder.style ?? 'solid'} onChange={v => set('headerBorder', { ...(style.headerBorder as any), style: v })} options={[
+                { label: 'Solid', value: 'solid' },
+                { label: 'Dashed', value: 'dashed' },
+                { label: 'Dotted', value: 'dotted' },
+                { label: 'Double', value: 'double' },
+              ]} />
+            </Row>
+            <Row label="Radius"><NumberInput value={Number(style.headerBorder.radius ?? 0)} onChange={v => set('headerBorder', { ...(style.headerBorder as any), radius: Number(v) })} min={0} max={16} /></Row>
+            <Row label="Padding"><TextInput value={String(style.headerBorder.padding ?? '12px')} onChange={v => set('headerBorder', { ...(style.headerBorder as any), padding: v })} placeholder="12px" /></Row>
+          </>
+        )}
       </PanelSection>
+
+      {/* Component visibility */}
+      <PanelSection title="Components">
+        <Row label="Show logo"><input type="checkbox" checked={style.showLogo !== false} onChange={e => set('showLogo', e.target.checked)} className="w-4 h-4" /></Row>
+        <Row label="Show name"><input type="checkbox" checked={style.showName !== false} onChange={e => set('showName', e.target.checked)} className="w-4 h-4" /></Row>
+        <Row label="Show Arabic name"><input type="checkbox" checked={style.showArabicName !== false} onChange={e => set('showArabicName', e.target.checked)} className="w-4 h-4" /></Row>
+        <Row label="Show address"><input type="checkbox" checked={style.showAddress !== false} onChange={e => set('showAddress', e.target.checked)} className="w-4 h-4" /></Row>
+        <Row label="Show contact"><input type="checkbox" checked={style.showContact !== false} onChange={e => set('showContact', e.target.checked)} className="w-4 h-4" /></Row>
+        <Row label="Show centre no"><input type="checkbox" checked={style.showCentreNo !== false} onChange={e => set('showCentreNo', e.target.checked)} className="w-4 h-4" /></Row>
+        <Row label="Show registration no"><input type="checkbox" checked={style.showRegistrationNo !== false} onChange={e => set('showRegistrationNo', e.target.checked)} className="w-4 h-4" /></Row>
+      </PanelSection>
+
+      {/* Component styles */}
+      <PanelSection title="Component Styles" defaultOpen={false}>
+        {/* Logo style */}
+        <div className="border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Logo</h4>
+           <Row label="Position"><SelectInput value={style.logoStyle?.position ?? 'auto'} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), position: v })} options={[
+            { label: 'Auto', value: 'auto' },
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Align"><SelectInput value={style.logoStyle?.align ?? 'left'} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), align: v })} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Border"><TextInput value={style.logoStyle?.border ? `${style.logoStyle.border.width}px ${style.logoStyle.border.style} ${style.logoStyle.border.color}` : ''} onChange={v => {
+             const parts = v.split(' ');
+             set('logoStyle', { ...(style.logoStyle || {}), border: parts.length >= 3 ? { enabled: true, width: Number(parts[0]) || 1, style: parts[1] as any, color: parts[2], radius: 0 } : undefined });
+           }} placeholder="2px solid #000" /></Row>
+           <Row label="Padding"><TextInput value={String(style.logoStyle?.padding ?? '')} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), padding: v })} placeholder="8px" /></Row>
+           <Row label="Margin"><TextInput value={String(style.logoStyle?.margin ?? '')} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), margin: v })} placeholder="4px" /></Row>
+           <Row label="Background"><ColorInput value={style.logoStyle?.background ?? '#ffffff'} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), background: v })} /></Row>
+           <Row label="Font size"><NumberInput value={style.logoStyle?.fontSize} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), fontSize: v })} min={8} max={72} /></Row>
+           <Row label="Color"><ColorInput value={style.logoStyle?.color ?? '#000000'} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), color: v })} /></Row>
+           <Row label="Font weight"><TextInput value={String(style.logoStyle?.fontWeight ?? '')} onChange={v => set('logoStyle', { ...(style.logoStyle || {}), fontWeight: v })} placeholder="bold" /></Row>
+        </div>
+
+        {/* Name style */}
+        <div className="border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">School Name</h4>
+           <Row label="Position"><SelectInput value={style.nameStyle?.position ?? 'auto'} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), position: v })} options={[
+            { label: 'Auto', value: 'auto' },
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Align"><SelectInput value={style.nameStyle?.align ?? 'left'} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), align: v })} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Border"><TextInput value={style.nameStyle?.border ? `${style.nameStyle.border.width}px ${style.nameStyle.border.style} ${style.nameStyle.border.color}` : ''} onChange={v => {
+             const parts = v.split(' ');
+             set('nameStyle', { ...(style.nameStyle || {}), border: parts.length >= 3 ? { enabled: true, width: Number(parts[0]) || 1, style: parts[1] as any, color: parts[2], radius: 0 } : undefined });
+           }} placeholder="2px solid #000" /></Row>
+           <Row label="Padding"><TextInput value={String(style.nameStyle?.padding ?? '')} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), padding: v })} placeholder="8px" /></Row>
+           <Row label="Margin"><TextInput value={String(style.nameStyle?.margin ?? '')} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), margin: v })} placeholder="4px" /></Row>
+           <Row label="Background"><ColorInput value={style.nameStyle?.background ?? '#ffffff'} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), background: v })} /></Row>
+           <Row label="Font size"><NumberInput value={style.nameStyle?.fontSize} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), fontSize: v })} min={8} max={72} /></Row>
+           <Row label="Color"><ColorInput value={style.nameStyle?.color ?? '#000000'} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), color: v })} /></Row>
+           <Row label="Font weight"><TextInput value={String(style.nameStyle?.fontWeight ?? '')} onChange={v => set('nameStyle', { ...(style.nameStyle || {}), fontWeight: v })} placeholder="bold" /></Row>
+        </div>
+
+        {/* Arabic name style */}
+        <div className="border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Arabic Name</h4>
+           <Row label="Position"><SelectInput value={style.arabicNameStyle?.position ?? 'auto'} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle || {}), position: v })} options={[
+            { label: 'Auto', value: 'auto' },
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Align"><SelectInput value={style.arabicNameStyle?.align ?? 'left'} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle || {}), align: v })} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+          <Row label="Border"><TextInput value={style.arabicNameStyle?.border ? `${style.arabicNameStyle.border.width}px ${style.arabicNameStyle.border.style} ${style.arabicNameStyle.border.color}` : ''} onChange={v => {
+            const parts = v.split(' ');
+            set('arabicNameStyle', { ...(style.arabicNameStyle as any), border: parts.length >= 3 ? { enabled: true, width: Number(parts[0]) || 1, style: parts[1] as any, color: parts[2], radius: 0 } : undefined });
+          }} placeholder="2px solid #000" /></Row>
+          <Row label="Padding"><TextInput value={String(style.arabicNameStyle?.padding ?? '')} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle as any), padding: v })} placeholder="8px" /></Row>
+          <Row label="Margin"><TextInput value={String(style.arabicNameStyle?.margin ?? '')} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle as any), margin: v })} placeholder="4px" /></Row>
+          <Row label="Background"><ColorInput value={style.arabicNameStyle?.background ?? '#ffffff'} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle as any), background: v })} /></Row>
+          <Row label="Font size"><NumberInput value={style.arabicNameStyle?.fontSize} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle as any), fontSize: v })} min={8} max={72} /></Row>
+          <Row label="Color"><ColorInput value={style.arabicNameStyle?.color ?? '#000000'} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle as any), color: v })} /></Row>
+          <Row label="Font weight"><TextInput value={String(style.arabicNameStyle?.fontWeight ?? '')} onChange={v => set('arabicNameStyle', { ...(style.arabicNameStyle as any), fontWeight: v })} placeholder="bold" /></Row>
+        </div>
+
+        {/* Address style */}
+        <div className="border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Address</h4>
+           <Row label="Position"><SelectInput value={style.addressStyle?.position ?? 'auto'} onChange={v => set('addressStyle', { ...(style.addressStyle || {}), position: v })} options={[
+            { label: 'Auto', value: 'auto' },
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Align"><SelectInput value={style.addressStyle?.align ?? 'left'} onChange={v => set('addressStyle', { ...(style.addressStyle || {}), align: v })} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+          <Row label="Border"><TextInput value={style.addressStyle?.border ? `${style.addressStyle.border.width}px ${style.addressStyle.border.style} ${style.addressStyle.border.color}` : ''} onChange={v => {
+            const parts = v.split(' ');
+            set('addressStyle', { ...(style.addressStyle as any), border: parts.length >= 3 ? { enabled: true, width: Number(parts[0]) || 1, style: parts[1] as any, color: parts[2], radius: 0 } : undefined });
+          }} placeholder="2px solid #000" /></Row>
+          <Row label="Padding"><TextInput value={String(style.addressStyle?.padding ?? '')} onChange={v => set('addressStyle', { ...(style.addressStyle as any), padding: v })} placeholder="8px" /></Row>
+          <Row label="Margin"><TextInput value={String(style.addressStyle?.margin ?? '')} onChange={v => set('addressStyle', { ...(style.addressStyle as any), margin: v })} placeholder="4px" /></Row>
+          <Row label="Background"><ColorInput value={style.addressStyle?.background ?? '#ffffff'} onChange={v => set('addressStyle', { ...(style.addressStyle as any), background: v })} /></Row>
+          <Row label="Font size"><NumberInput value={style.addressStyle?.fontSize} onChange={v => set('addressStyle', { ...(style.addressStyle as any), fontSize: v })} min={8} max={72} /></Row>
+          <Row label="Color"><ColorInput value={style.addressStyle?.color ?? '#666666'} onChange={v => set('addressStyle', { ...(style.addressStyle as any), color: v })} /></Row>
+          <Row label="Font weight"><TextInput value={String(style.addressStyle?.fontWeight ?? '')} onChange={v => set('addressStyle', { ...(style.addressStyle as any), fontWeight: v })} placeholder="normal" /></Row>
+        </div>
+
+        {/* Contact style */}
+        <div className="border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Contact</h4>
+           <Row label="Position"><SelectInput value={style.contactStyle?.position ?? 'auto'} onChange={v => set('contactStyle', { ...(style.contactStyle || {}), position: v })} options={[
+            { label: 'Auto', value: 'auto' },
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Align"><SelectInput value={style.contactStyle?.align ?? 'left'} onChange={v => set('contactStyle', { ...(style.contactStyle || {}), align: v })} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+          <Row label="Border"><TextInput value={style.contactStyle?.border ? `${style.contactStyle.border.width}px ${style.contactStyle.border.style} ${style.contactStyle.border.color}` : ''} onChange={v => {
+            const parts = v.split(' ');
+            set('contactStyle', { ...(style.contactStyle as any), border: parts.length >= 3 ? { enabled: true, width: Number(parts[0]) || 1, style: parts[1] as any, color: parts[2], radius: 0 } : undefined });
+          }} placeholder="2px solid #000" /></Row>
+          <Row label="Padding"><TextInput value={String(style.contactStyle?.padding ?? '')} onChange={v => set('contactStyle', { ...(style.contactStyle as any), padding: v })} placeholder="8px" /></Row>
+          <Row label="Margin"><TextInput value={String(style.contactStyle?.margin ?? '')} onChange={v => set('contactStyle', { ...(style.contactStyle as any), margin: v })} placeholder="4px" /></Row>
+          <Row label="Background"><ColorInput value={style.contactStyle?.background ?? '#ffffff'} onChange={v => set('contactStyle', { ...(style.contactStyle as any), background: v })} /></Row>
+          <Row label="Font size"><NumberInput value={style.contactStyle?.fontSize} onChange={v => set('contactStyle', { ...(style.contactStyle as any), fontSize: v })} min={8} max={72} /></Row>
+          <Row label="Color"><ColorInput value={style.contactStyle?.color ?? '#666666'} onChange={v => set('contactStyle', { ...(style.contactStyle as any), color: v })} /></Row>
+          <Row label="Font weight"><TextInput value={String(style.contactStyle?.fontWeight ?? '')} onChange={v => set('contactStyle', { ...(style.contactStyle as any), fontWeight: v })} placeholder="normal" /></Row>
+        </div>
+
+        {/* Centre No style */}
+        <div className="border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Centre No</h4>
+           <Row label="Position"><SelectInput value={style.centreNoStyle?.position ?? 'auto'} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle || {}), position: v })} options={[
+            { label: 'Auto', value: 'auto' },
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Align"><SelectInput value={style.centreNoStyle?.align ?? 'left'} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle || {}), align: v })} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+          <Row label="Border"><TextInput value={style.centreNoStyle?.border ? `${style.centreNoStyle.border.width}px ${style.centreNoStyle.border.style} ${style.centreNoStyle.border.color}` : ''} onChange={v => {
+            const parts = v.split(' ');
+            set('centreNoStyle', { ...(style.centreNoStyle as any), border: parts.length >= 3 ? { enabled: true, width: Number(parts[0]) || 1, style: parts[1] as any, color: parts[2], radius: 0 } : undefined });
+          }} placeholder="2px solid #000" /></Row>
+          <Row label="Padding"><TextInput value={String(style.centreNoStyle?.padding ?? '')} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle as any), padding: v })} placeholder="8px" /></Row>
+          <Row label="Margin"><TextInput value={String(style.centreNoStyle?.margin ?? '')} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle as any), margin: v })} placeholder="4px" /></Row>
+          <Row label="Background"><ColorInput value={style.centreNoStyle?.background ?? '#ffffff'} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle as any), background: v })} /></Row>
+          <Row label="Font size"><NumberInput value={style.centreNoStyle?.fontSize} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle as any), fontSize: v })} min={8} max={72} /></Row>
+          <Row label="Color"><ColorInput value={style.centreNoStyle?.color ?? '#666666'} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle as any), color: v })} /></Row>
+          <Row label="Font weight"><TextInput value={String(style.centreNoStyle?.fontWeight ?? '')} onChange={v => set('centreNoStyle', { ...(style.centreNoStyle as any), fontWeight: v })} placeholder="normal" /></Row>
+        </div>
+
+        {/* Registration No style */}
+        <div className="border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Registration No</h4>
+           <Row label="Position"><SelectInput value={style.registrationNoStyle?.position ?? 'auto'} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle || {}), position: v })} options={[
+            { label: 'Auto', value: 'auto' },
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+           <Row label="Align"><SelectInput value={style.registrationNoStyle?.align ?? 'left'} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle || {}), align: v })} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} /></Row>
+          <Row label="Border"><TextInput value={style.registrationNoStyle?.border ? `${style.registrationNoStyle.border.width}px ${style.registrationNoStyle.border.style} ${style.registrationNoStyle.border.color}` : ''} onChange={v => {
+            const parts = v.split(' ');
+            set('registrationNoStyle', { ...(style.registrationNoStyle as any), border: parts.length >= 3 ? { enabled: true, width: Number(parts[0]) || 1, style: parts[1] as any, color: parts[2], radius: 0 } : undefined });
+          }} placeholder="2px solid #000" /></Row>
+          <Row label="Padding"><TextInput value={String(style.registrationNoStyle?.padding ?? '')} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle as any), padding: v })} placeholder="8px" /></Row>
+          <Row label="Margin"><TextInput value={String(style.registrationNoStyle?.margin ?? '')} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle as any), margin: v })} placeholder="4px" /></Row>
+          <Row label="Background"><ColorInput value={style.registrationNoStyle?.background ?? '#ffffff'} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle as any), background: v })} /></Row>
+          <Row label="Font size"><NumberInput value={style.registrationNoStyle?.fontSize} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle as any), fontSize: v })} min={8} max={72} /></Row>
+          <Row label="Color"><ColorInput value={style.registrationNoStyle?.color ?? '#666666'} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle as any), color: v })} /></Row>
+          <Row label="Font weight"><TextInput value={String(style.registrationNoStyle?.fontWeight ?? '')} onChange={v => set('registrationNoStyle', { ...(style.registrationNoStyle as any), fontWeight: v })} placeholder="normal" /></Row>
+        </div>
+      </PanelSection>
+
       <SpacingSection section={section} onMutate={onMutate} />
       <DeleteSectionBtn section={section} onMutate={onMutate} />
     </div>

@@ -11,6 +11,13 @@
 
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: join(__dirname, '..', '.env.local') });
 
 dotenv.config({ path: '.env.local' });
 
@@ -367,10 +374,191 @@ const NORTHGATE_CLASSIC = {
   shapes: [],
 };
 
+// ─── 4 & 5. Clone Variants ────────────────────────────────────────────────────
+
+const DEFAULT_CLONE = {
+  $schema: 'drce/v1',
+  meta: {
+    id:           '8',
+    name:         'Default Clone',
+    school_id:    null,
+    version:      1,
+    created_at:   '2026-01-01T00:00:00Z',
+    updated_at:   '2026-01-01T00:00:00Z',
+    report_type:  'end_of_term',
+    is_default:   false,
+    template_key: 'default-clone',
+  },
+  theme: {
+    ...DRAIS_THEME,
+    pageBorder: { enabled: true, color: '#cccccc', width: 1, style: 'solid', radius: 0 },
+    pagePadding: '18px 20px',
+  },
+  watermark: DEFAULT_WATERMARK,
+  sections: DRAIS_DEFAULT_DOCUMENT.sections.map(section => {
+    if (section.type === 'header') {
+      return {
+        ...section,
+        style: {
+          ...section.style,
+          paddingBottom: 12,
+          borderBottom: '2px solid #0000FF',
+          gap: 14,
+        },
+      };
+    }
+    return { ...section };
+  }),
+  shapes: [],
+};
+
+const ARABIC_CLONE = {
+  $schema: 'drce/v1',
+  meta: {
+    id:           '9',
+    name:         'Arabic Clone',
+    school_id:    null,
+    version:      1,
+    created_at:   '2026-01-01T00:00:00Z',
+    updated_at:   '2026-01-01T00:00:00Z',
+    report_type:  'end_of_term',
+    is_default:   false,
+    template_key: 'arabic-clone',
+  },
+  theme: {
+    primaryColor:   '#006633',
+    secondaryColor: '#B22222',
+    accentColor:    '#D4AF37',
+    fontFamily:     'Traditional Arabic, Arial, sans-serif',
+    baseFontSize:   12,
+    pagePadding:    '16px 18px',
+    pageBackground: '#ffffff',
+    pageBorder: { enabled: false, color: '#cccccc', width: 1, style: 'solid' as const, radius: 0 },
+    pageSize: 'a4',
+    orientation: 'portrait',
+  },
+  watermark: { ...DEFAULT_WATERMARK, content: 'مجهول' },
+  sections: [
+    {
+      id: 'section-header', type: 'header', visible: true, order: 0,
+      style: {
+        layout: 'three-column',
+        paddingBottom: 12,
+        borderBottom: '2px solid #006633',
+        opacity: 1,
+        logoWidth: 70,
+        logoHeight: 70,
+        gap: 16,
+      },
+    },
+    {
+      id: 'section-banner', type: 'banner', visible: true, order: 1,
+      content: { text: '{reportTitle}' },
+      style: {
+        backgroundColor: '#006633',
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'right',
+        padding: '10px',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        borderRadius: 4,
+      },
+    },
+    {
+      id: 'section-student-info', type: 'student_info', visible: true, order: 2,
+      fields: [
+        { id: 'f-name',   label: 'الاسم',        binding: 'student.fullName',    visible: true, order: 0 },
+        { id: 'f-gender', label: 'الجنس',         binding: 'student.gender',      visible: true, order: 1 },
+        { id: 'f-class',  label: 'الصف',         binding: 'student.className',   visible: true, order: 2 },
+        { id: 'f-stream', label: 'المجموعة',      binding: 'student.streamName',  visible: true, order: 3 },
+        { id: 'f-admno',  label: 'رقم القيد',     binding: 'student.admissionNo', visible: true, order: 4 },
+        { id: 'f-term',   label: 'الفصل',         binding: 'meta.term',           visible: true, order: 5 },
+      ],
+      style: {
+        border: '2px solid #006633',
+        borderRadius: 8,
+        padding: '12px',
+        background: '#f8fbf8',
+        labelColor: '#006633',
+        valueColor: '#B22222',
+        valueFontWeight: 'bold',
+        valueFontSize: 14,
+        showBarcode: true,
+        showPhoto: true,
+        fieldsPerRow: 3,
+      },
+    },
+    {
+      id: 'section-ribbon-1', type: 'ribbon', visible: true, order: 3,
+      content: { text: 'النتائج الأكاديمية', shape: 'arrow-down' },
+      style: {
+        background: '#D4AF37',
+        color: '#006633',
+        fontWeight: 'bold',
+        fontSize: 12,
+        padding: '6px 0',
+        textAlign: 'center',
+      },
+    },
+    {
+      id: 'section-results', type: 'results_table', visible: true, order: 4,
+      columns: [
+        { id: 'col-subject',  header: 'المادة',  binding: 'result.subjectName',  width: '25%', visible: true, order: 0, align: 'right' },
+        { id: 'col-mid',      header: '中期',     binding: 'result.midTermScore', width: '10%', visible: true, order: 1, align: 'center' },
+        { id: 'col-eot',      header: 'نهائي',    binding: 'result.endTermScore', width: '10%', visible: true, order: 2, align: 'center' },
+        { id: 'col-total',    header: 'المجموع',  binding: 'result.total',        width: '10%', visible: true, order: 3, align: 'center' },
+        { id: 'col-grade',    header: 'الدرجة',    binding: 'result.grade',        width: '8%',  visible: true, order: 4, align: 'center', style: { color: '#B22222', fontWeight: 'bold' } },
+        { id: 'col-comment',  header: 'التعليق',  binding: 'result.comment',      width: '27%', visible: true, order: 5, align: 'right', style: { fontStyle: 'italic', color: '#006633' } },
+        { id: 'col-initials', header: 'الرمز',    binding: 'result.initials',     width: '10%', visible: true, order: 6, align: 'center' },
+      ],
+      style: {
+        headerBackground: '#f0f8f0',
+        headerBorder: '2px solid #006633',
+        rowBorder: '1px solid #c8e6c9',
+        headerFontSize: 11,
+        rowFontSize: 11,
+        headerTextTransform: 'none',
+        padding: 5,
+      },
+    },
+    {
+      id: 'section-assessment', type: 'assessment', visible: true, order: 5,
+      fields: [
+        { id: 'a-class-pos',  label: 'الترتيب في الصف',  binding: 'assessment.classPosition',  visible: true, order: 0 },
+        { id: 'a-aggregates', label: 'المجاميع',         binding: 'assessment.aggregates',     visible: true, order: 1 },
+        { id: 'a-division',   label: 'التقدير',         binding: 'assessment.division',       visible: true, order: 2 },
+      ],
+      style: {},
+    },
+    {
+      id: 'section-comments', type: 'comments', visible: true, order: 6,
+      items: [
+        { id: 'c-class', label: 'تعليق المعلم:',    binding: 'comments.classTeacher', visible: true, order: 0 },
+        { id: 'c-dos',   label: 'تعليق المشرف:',    binding: 'comments.dos',          visible: true, order: 1 },
+        { id: 'c-head',  label: 'تعليق المدير:',     binding: 'comments.headTeacher',  visible: true, order: 2 },
+      ],
+      style: {
+        ribbonBackground: '#D4AF37',
+        ribbonColor: '#006633',
+        textColor: '#006633',
+        textFontStyle: 'italic' as const,
+      },
+    },
+    {
+      id: 'section-grade-table', type: 'grade_table', visible: true, order: 7,
+      style: { headerBackground: '#f0f8f0', border: '2px solid #006633' },
+      grades: DEFAULT_GRADE_ROWS,
+    },
+  ],
+  shapes: [],
+};
+
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
-  const conn = await mysql.createConnection({
+  const connection = await mysql.createConnection({
     host:     process.env.TIDB_HOST     || process.env.DB_HOST,
     port:     Number(process.env.TIDB_PORT || process.env.DB_PORT || 4000),
     user:     process.env.TIDB_USER     || process.env.DB_USER,
@@ -385,24 +573,40 @@ async function main() {
     console.log('Seeding DRCE built-in templates...\n');
 
     const templates = [
-      { template: DRAIS_DEFAULT, name: 'DRAIS Default' },
-      { template: MODERN_CLEAN, name: 'Modern Clean' },
-      { template: NORTHGATE_CLASSIC, name: 'Northgate Classic' },
+      { template: DRAIS_DEFAULT, name: 'DRAIS Default', id: '1' },
+      { template: MODERN_CLEAN, name: 'Modern Clean', id: '2' },
+      { template: NORTHGATE_CLASSIC, name: 'Northgate Classic', id: '3' },
+      { template: DEFAULT_CLONE, name: 'Default Clone', id: '8' },
+      { template: ARABIC_CLONE, name: 'Arabic Clone', id: '9' },
     ];
 
-    for (const { template, name } of templates) {
+    for (const { template, name, id } of templates) {
       const schemaJson = JSON.stringify(template);
-      const [result] = await conn.execute(
+      const [result] = await connection.execute(
         `UPDATE dvcf_documents 
          SET schema_json = ?, schema_version = 1, updated_at = NOW() 
          WHERE id = ? AND template_key = ?`,
-        [schemaJson, template.meta.id, template.meta.template_key],
+        [schemaJson, id, template.meta.template_key],
       );
 
       if (result.affectedRows > 0) {
-        console.log(`✓ Updated "${name}" (id=${template.meta.id})`);
+        console.log(`✓ Updated "${name}" (id=${id})`);
       } else {
-        console.log(`✗ Failed to update "${name}" — record not found`);
+        // Try insert if update didn't match
+        const insertResult = await connection.execute(
+          `INSERT INTO dvcf_documents 
+             (id, school_id, document_type, name, description, schema_json, schema_version, is_default, template_key, created_at, updated_at)
+           VALUES (?, ?, 'report_card', ?, ?, ?, 1, 0, ?, NOW(), NOW())
+           ON DUPLICATE KEY UPDATE 
+             schema_json = VALUES(schema_json), 
+             updated_at = NOW()`,
+          [id, null, name, `Report template: ${name}`, schemaJson, template.meta.template_key],
+        );
+        if (insertResult.affectedRows > 0) {
+          console.log(`✓ Inserted "${name}" (id=${id})`);
+        } else {
+          console.log(`✗ Failed to insert/update "${name}"`);
+        }
       }
     }
 
@@ -411,7 +615,7 @@ async function main() {
     console.error('✗ Error:', err.message);
     process.exit(1);
   } finally {
-    await conn.end();
+    await connection.end();
   }
 }
 

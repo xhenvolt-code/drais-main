@@ -3,9 +3,8 @@
 
 import React from 'react';
 import Image from 'next/image';
-import type { DRCEHeaderSection, DRCETheme } from '@/lib/drce/schema';
+import type { DRCEHeaderSection, DRCETheme, DRCEHeaderComponentStyle } from '@/lib/drce/schema';
 import { resolveHeaderStyle } from '@/lib/drce/styleResolver';
-import { resolveToken } from '@/lib/drce/tokenResolver';
 import type { DRCERenderContext } from '../types';
 
 interface Props {
@@ -14,120 +13,380 @@ interface Props {
   ctx: DRCERenderContext;
 }
 
+// Resolve component style with defaults
+function resolveComponentStyle(
+  componentStyle: DRCEHeaderComponentStyle | undefined,
+  theme: DRCETheme,
+): React.CSSProperties {
+  if (!componentStyle) return {};
+  
+  return {
+    padding: componentStyle.padding,
+    margin: componentStyle.margin,
+    background: componentStyle.background,
+    fontSize: componentStyle.fontSize !== undefined ? componentStyle.fontSize : 'inherit',
+    color: componentStyle.color ?? 'inherit',
+    fontWeight: componentStyle.fontWeight,
+    textAlign: componentStyle.align as any,
+    ...(componentStyle.border?.enabled && {
+      border: `${componentStyle.border.width}px ${componentStyle.border.style} ${componentStyle.border.color}`,
+      borderRadius: componentStyle.border.radius,
+    }),
+  };
+}
+
+function renderComponent(
+  id: string,
+  content: React.ReactNode,
+  componentStyle: DRCEHeaderComponentStyle | undefined,
+  theme: DRCETheme,
+) {
+  if (!content) return null;
+  
+  const style = resolveComponentStyle(componentStyle, theme);
+  const position = componentStyle?.position ?? 'auto';
+  
+  return (
+    <div key={id} style={{ ...style, gridArea: position !== 'auto' ? position : undefined }}>
+      {content}
+    </div>
+  );
+}
+
 export function HeaderSection({ section, theme, ctx }: Props) {
   if (!section.visible) return null;
-  const style = resolveHeaderStyle(section.style);
+  
+  const containerStyle = resolveHeaderStyle(section.style);
   const { school } = ctx;
+  const gap = section.style.gap ?? 12;
 
-  const logoImg = school.logo_url ? (
-    <Image
-      src={school.logo_url}
-      alt="School Logo"
-      width={section.style.logoWidth ?? 64}
-      height={section.style.logoHeight ?? 64}
-      style={{ maxHeight: section.style.logoHeight ?? 64, objectFit: 'contain' }}
-      unoptimized
-    />
-  ) : (
-    <div style={{
-      width: section.style.logoWidth ?? 64,
-      height: section.style.logoHeight ?? 64,
-      borderRadius: 4,
-      background: theme.primaryColor, opacity: 0.15,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 24,
-    }}>🏫</div>
-  );
+  // Determine what components should be visible
+  const showLogo = section.style.showLogo !== false;
+  const showName = section.style.showName !== false;
+  const showArabicName = section.style.showArabicName !== false && school.arabic_name;
+  const showAddress = section.style.showAddress !== false && school.address;
+  const showContact = section.style.showContact !== false && school.contact;
+  const showCentreNo = section.style.showCentreNo !== false && school.center_no;
+  const showRegistrationNo = section.style.showRegistrationNo !== false && school.registration_no;
 
-  if (section.style.layout === 'centered') {
-    return (
-      <div style={style}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: 4 }}>
-          {logoImg}
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 'bold', fontSize: theme.baseFontSize + 2, color: theme.primaryColor }}>
-              {school.name}
+  // Render logo component
+  const logoImg = showLogo ? (
+    school.logo_url ? (
+      <Image
+        src={school.logo_url}
+        alt="School Logo"
+        width={section.style.logoWidth ?? 64}
+        height={section.style.logoHeight ?? 64}
+        style={{
+          maxHeight: section.style.logoHeight ?? 64,
+          objectFit: 'contain',
+          width: 'auto',
+        }}
+        unoptimized
+      />
+    ) : (
+      <div
+        style={{
+          width: section.style.logoWidth ?? 64,
+          height: section.style.logoHeight ?? 64,
+          borderRadius: 4,
+          background: theme.primaryColor,
+          opacity: 0.15,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 24,
+        }}
+      >
+        🏫
+      </div>
+    )
+  ) : null;
+
+  // Handle traditional layouts (backward compatibility)
+  if (
+    section.style.layout === 'centered' ||
+    section.style.layout === 'left-logo' ||
+    section.style.layout === 'three-column'
+  ) {
+    if (section.style.layout === 'centered') {
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: 4 }}>
+            {logoImg && <div>{logoImg}</div>}
+            <div style={{ textAlign: 'center' }}>
+              {showName && (
+                <div
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: theme.baseFontSize + 2,
+                    color: theme.primaryColor,
+                    ...resolveComponentStyle(section.style.nameStyle, theme),
+                  }}
+                >
+                  {school.name}
+                </div>
+              )}
+              {showArabicName && (
+                <div
+                  style={{
+                    fontSize: theme.baseFontSize,
+                    color: theme.primaryColor,
+                    direction: 'rtl',
+                    ...resolveComponentStyle(section.style.arabicNameStyle, theme),
+                  }}
+                >
+                  {school.arabic_name}
+                </div>
+              )}
+              {showAddress && (
+                <div
+                  style={{
+                    fontSize: theme.baseFontSize - 1,
+                    color: '#666',
+                    ...resolveComponentStyle(section.style.addressStyle, theme),
+                  }}
+                >
+                  {school.address}
+                </div>
+              )}
             </div>
-            {school.arabic_name && (
-              <div style={{ fontSize: theme.baseFontSize, color: theme.primaryColor, direction: 'rtl' }}>
+          </div>
+        </div>
+      );
+    }
+
+    if (section.style.layout === 'left-logo') {
+      return (
+        <div style={containerStyle}>
+          <div style={{ flex: '4', paddingRight: 12 }}>
+            {showName && (
+              <div
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: theme.baseFontSize + 10,
+                  color: theme.primaryColor,
+                  margin: 0,
+                  ...resolveComponentStyle(section.style.nameStyle, theme),
+                }}
+              >
+                {school.name}
+              </div>
+            )}
+            {showArabicName && (
+              <div
+                style={{
+                  fontSize: theme.baseFontSize,
+                  color: theme.primaryColor,
+                  direction: 'rtl',
+                  ...resolveComponentStyle(section.style.arabicNameStyle, theme),
+                }}
+              >
                 {school.arabic_name}
               </div>
             )}
-            {school.address && (
-              <div style={{ fontSize: theme.baseFontSize - 1, color: '#666' }}>{school.address}</div>
+            {showAddress && (
+              <div
+                style={{
+                  fontSize: theme.baseFontSize + 1,
+                  fontWeight: 'bold',
+                  fontStyle: 'italic',
+                  margin: '2px 0',
+                  ...resolveComponentStyle(section.style.addressStyle, theme),
+                }}
+              >
+                {school.address}
+              </div>
+            )}
+            {showContact && (
+              <div
+                style={{
+                  fontSize: theme.baseFontSize + 1,
+                  fontWeight: 'bold',
+                  fontStyle: 'italic',
+                  margin: '2px 0',
+                  ...resolveComponentStyle(section.style.contactStyle, theme),
+                }}
+              >
+                {school.contact}
+              </div>
             )}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // left-logo: school info occupies ~80 % of the width on the left;
-  // badge / logo sits on the right — mirrors the rpt.html header table exactly.
-  if (section.style.layout === 'left-logo') {
-    return (
-      <div style={style}>
-        <div style={{ flex: '4', paddingRight: 12 }}>
-          <div style={{
-            fontWeight: 'bold',
-            fontSize: theme.baseFontSize + 10,
-            color: theme.primaryColor,
-            margin: 0,
-          }}>
-            {school.name}
+          <div style={{ flex: '0 0 auto', textAlign: 'right' }}>
+            {logoImg}
           </div>
-          {school.arabic_name && (
-            <div style={{ fontSize: theme.baseFontSize, color: theme.primaryColor, direction: 'rtl' }}>
+        </div>
+      );
+    }
+
+    // three-column (default)
+    return (
+      <div style={containerStyle}>
+        <div style={{ flex: '0 0 auto' }}>
+          {logoImg}
+        </div>
+        <div style={{ flex: 1, textAlign: 'center', padding: '0 12px' }}>
+          {showName && (
+            <div
+              style={{
+                fontWeight: 'bold',
+                fontSize: theme.baseFontSize + 2,
+                color: theme.primaryColor,
+                ...resolveComponentStyle(section.style.nameStyle, theme),
+              }}
+            >
+              {school.name}
+            </div>
+          )}
+          {showArabicName && (
+            <div
+              style={{
+                fontSize: theme.baseFontSize,
+                color: theme.primaryColor,
+                direction: 'rtl',
+                ...resolveComponentStyle(section.style.arabicNameStyle, theme),
+              }}
+            >
               {school.arabic_name}
             </div>
           )}
-          {school.address && (
-            <div style={{
-              fontSize: theme.baseFontSize + 1,
-              fontWeight: 'bold',
-              fontStyle: 'italic',
-              margin: '2px 0',
-            }}>
+          {showAddress && (
+            <div
+              style={{
+                fontSize: theme.baseFontSize - 1,
+                color: '#666',
+                ...resolveComponentStyle(section.style.addressStyle, theme),
+              }}
+            >
               {school.address}
             </div>
           )}
-          {school.contact && (
-            <div style={{
-              fontSize: theme.baseFontSize + 1,
-              fontWeight: 'bold',
-              fontStyle: 'italic',
-              margin: '2px 0',
-            }}>
-              {school.contact}
-            </div>
-          )}
         </div>
-        <div style={{ flex: '0 0 auto', textAlign: 'right' }}>{logoImg}</div>
+        <div style={{ flex: '0 0 auto', textAlign: 'right', fontSize: theme.baseFontSize - 1, color: '#666' }}>
+          {showContact && school.contact && <div>{school.contact}</div>}
+          {showCentreNo && school.center_no && <div>Centre: {school.center_no}</div>}
+          {showRegistrationNo && school.registration_no && <div>Reg: {school.registration_no}</div>}
+        </div>
       </div>
     );
   }
 
-  // three-column (default)
-  return (
-    <div style={style}>
-      <div style={{ flex: '0 0 auto' }}>{logoImg}</div>
-      <div style={{ flex: 1, textAlign: 'center', padding: '0 12px' }}>
-        <div style={{ fontWeight: 'bold', fontSize: theme.baseFontSize + 2, color: theme.primaryColor }}>
-          {school.name}
-        </div>
-        {school.arabic_name && (
-          <div style={{ fontSize: theme.baseFontSize, color: theme.primaryColor, direction: 'rtl' }}>
-            {school.arabic_name}
+  // flex-grid layout: allows custom positioning of each component
+  if (section.style.layout === 'flex-grid' || section.style.layout === 'custom') {
+    return (
+      <div
+        style={{
+          ...containerStyle,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: `${gap}px`,
+          alignItems: 'flex-start',
+          ...(section.style.headerBorder?.enabled && {
+            border: `${section.style.headerBorder.width}px ${section.style.headerBorder.style} ${section.style.headerBorder.color}`,
+            borderRadius: section.style.headerBorder.radius,
+            padding: '12px',
+          }),
+        }}
+      >
+        {/* Logo */}
+        {logoImg && (
+          <div
+            style={{
+              order: section.style.logoStyle?.position === 'right' ? 3 : 1,
+              ...resolveComponentStyle(section.style.logoStyle, theme),
+            }}
+          >
+            {logoImg}
           </div>
         )}
-        {school.address && (
-          <div style={{ fontSize: theme.baseFontSize - 1, color: '#666' }}>{school.address}</div>
-        )}
+
+        {/* Name + Arabic + Address (center column) */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 200,
+            order: section.style.nameStyle?.position === 'right' ? 3 : 2,
+          }}
+        >
+          {showName && (
+            <div
+              style={{
+                fontWeight: 'bold',
+                fontSize: theme.baseFontSize + 2,
+                color: theme.primaryColor,
+                ...resolveComponentStyle(section.style.nameStyle, theme),
+              }}
+            >
+              {school.name}
+            </div>
+          )}
+          {showArabicName && (
+            <div
+              style={{
+                fontSize: theme.baseFontSize,
+                color: theme.primaryColor,
+                direction: 'rtl',
+                marginTop: 4,
+                ...resolveComponentStyle(section.style.arabicNameStyle, theme),
+              }}
+            >
+              {school.arabic_name}
+            </div>
+          )}
+          {showAddress && (
+            <div
+              style={{
+                fontSize: theme.baseFontSize - 1,
+                color: '#666',
+                marginTop: 4,
+                ...resolveComponentStyle(section.style.addressStyle, theme),
+              }}
+            >
+              {school.address}
+            </div>
+          )}
+        </div>
+
+        {/* Contact info (right column) */}
+        <div
+          style={{
+            order: 3,
+            minWidth: 100,
+            textAlign: 'right',
+            fontSize: theme.baseFontSize - 1,
+            color: '#666',
+          }}
+        >
+          {showContact && school.contact && (
+            <div style={resolveComponentStyle(section.style.contactStyle, theme)}>
+              {school.contact}
+            </div>
+          )}
+          {showCentreNo && school.center_no && (
+            <div style={resolveComponentStyle(section.style.centreNoStyle, theme)}>
+              Centre: {school.center_no}
+            </div>
+          )}
+          {showRegistrationNo && school.registration_no && (
+            <div style={resolveComponentStyle(section.style.registrationNoStyle, theme)}>
+              Reg: {school.registration_no}
+            </div>
+          )}
+        </div>
       </div>
-      <div style={{ flex: '0 0 auto', textAlign: 'right', fontSize: theme.baseFontSize - 1, color: '#666' }}>
-        {school.contact && <div>{school.contact}</div>}
-        {school.center_no && <div>Centre: {school.center_no}</div>}
-        {school.registration_no && <div>Reg: {school.registration_no}</div>}
+    );
+  }
+
+  // Fallback to three-column
+  return (
+    <div style={containerStyle}>
+      <div style={{ flex: '0 0 auto' }}>{logoImg}</div>
+      <div style={{ flex: 1, textAlign: 'center', padding: '0 12px' }}>
+        {showName && (
+          <div style={{ fontWeight: 'bold', fontSize: theme.baseFontSize + 2, color: theme.primaryColor }}>
+            {school.name}
+          </div>
+        )}
       </div>
     </div>
   );

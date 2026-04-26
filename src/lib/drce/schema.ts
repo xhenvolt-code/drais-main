@@ -167,13 +167,77 @@ export interface DRCECommentItem {
 
 // ─── Section Styles (per section type) ───────────────────────────────────────
 
+export interface DRCEHeaderComponentBorder {
+  enabled: boolean;
+  color: string;
+  width: number;
+  style: 'solid' | 'dashed' | 'dotted' | 'double';
+  radius: number;
+}
+
+export interface DRCEHeaderComponentStyle {
+  /** Position on horizontal axis: 'left', 'center', 'right', or 'auto' for default layout behavior */
+  position?: 'left' | 'center' | 'right' | 'auto';
+  /** Alignment within the component's space */
+  align?: 'left' | 'center' | 'right';
+  /** Border styling for this component */
+  border?: DRCEHeaderComponentBorder;
+  /** Padding within the component */
+  padding?: string;
+  /** Margin around the component */
+  margin?: string;
+  /** Background color for the component container */
+  background?: string;
+  /** Font size multiplier or absolute size */
+  fontSize?: number;
+  /** Text color */
+  color?: string;
+  /** Font weight */
+  fontWeight?: string;
+}
+
 export interface DRCEHeaderStyle {
-  layout: 'three-column' | 'centered' | 'left-logo';
+  layout: 'three-column' | 'centered' | 'left-logo' | 'flex-grid' | 'custom';
   paddingBottom: number;
   borderBottom: string;
   opacity: number;
   logoWidth: number;
   logoHeight: number;
+  
+  // ─── Component-level positioning & styling ────────────────────────────────
+  
+  /** Logo/badge component styling */
+  logoStyle?: DRCEHeaderComponentStyle;
+  /** School name component styling */
+  nameStyle?: DRCEHeaderComponentStyle;
+  /** Arabic name component styling */
+  arabicNameStyle?: DRCEHeaderComponentStyle;
+  /** Address component styling */
+  addressStyle?: DRCEHeaderComponentStyle;
+  /** Contact/phone component styling */
+  contactStyle?: DRCEHeaderComponentStyle;
+  /** Centre number component styling */
+  centreNoStyle?: DRCEHeaderComponentStyle;
+  /** Registration number component styling */
+  registrationNoStyle?: DRCEHeaderComponentStyle;
+  
+  // ─── Component visibility toggles ──────────────────────────────────────────
+  
+  showLogo?: boolean;
+  showName?: boolean;
+  showArabicName?: boolean;
+  showAddress?: boolean;
+  showContact?: boolean;
+  showCentreNo?: boolean;
+  showRegistrationNo?: boolean;
+  
+  // ─── Header container border ──────────────────────────────────────────────
+  
+  headerBorder?: DRCEHeaderComponentBorder;
+  
+  // ─── Layout gap (spacing between flex items) ──────────────────────────────
+  
+  gap?: number;
 }
 
 export interface DRCEBannerStyle {

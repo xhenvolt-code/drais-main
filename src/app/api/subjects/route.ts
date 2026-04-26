@@ -34,15 +34,16 @@ async function selfHealAutoIncrement(conn: any): Promise<boolean> {
         academic_type ENUM('secular','theology') NOT NULL DEFAULT 'secular',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMP NULL DEFAULT NULL,
         INDEX idx_school_type (school_id, subject_type),
         INDEX idx_school_academic (school_id, academic_type),
         INDEX idx_code (code),
-        UNIQUE KEY unique_school_subject (school_id, name)
+        UNIQUE KEY unique_school_subject (school_id, name, deleted_at)
       )`);
-      await conn.query(`INSERT IGNORE INTO _subjects_new (id, school_id, name, code, subject_type, academic_type, created_at, updated_at)
+      await conn.query(`INSERT IGNORE INTO _subjects_new (id, school_id, name, code, subject_type, academic_type, created_at, updated_at, deleted_at)
         SELECT id, school_id, name, code, subject_type,
           COALESCE(academic_type, 'secular'),
-          created_at, updated_at
+          created_at, updated_at, deleted_at
         FROM subjects`);
       await conn.query('DROP TABLE subjects');
       await conn.query('ALTER TABLE _subjects_new RENAME TO subjects');
@@ -79,11 +80,15 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');
+    const academicType = searchParams.get('academic_type');
+    const search = searchParams.get('search') || '';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
+    const offset = (page - 1) * limit;
 
     connection = await getConnection();
 
-    const academicType = searchParams.get('academic_type');
-
+    // Build base SQL
     let sql = 'SELECT id, name, code, subject_type, academic_type FROM subjects WHERE school_id = ? AND deleted_at IS NULL';
     const params: any[] = [schoolId];
 
@@ -97,9 +102,28 @@ export async function GET(req: NextRequest) {
       params.push(academicType);
     }
 
-    sql += ' ORDER BY name ASC';
+    if (search.trim()) {
+      sql += ' AND name LIKE ?';
+      params.push(`%${search}%`);
+    }
+
+    // Get total count
+    const countSql = sql.replace('SELECT id, name, code, subject_type, academic_type', 'SELECT COUNT(*) as total');
+    const [countResult]: any = await connection.execute(countSql, params);
+    const total = countResult[0]?.total || 0;
+
+    // Get paginated results
+    sql += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+    
     const [rows] = await connection.execute(sql, params);
-    return NextResponse.json({ data: rows });
+    return NextResponse.json({ 
+      data: rows, 
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit)
+    });
   } catch (e: any) {
     console.error('Subjects GET error:', e);
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -151,13 +175,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, id });
     }
 
-    // Check duplicate
+    // Check duplicate (only active subjects - exclude soft-deleted)
+    // Use LOWER() to ensure case-insensitive matching (e.g., "English" vs "ENGLISH")
     const [dup] = await connection.execute(
-      'SELECT id FROM subjects WHERE name = ? AND school_id = ?',
+      'SELECT id FROM subjects WHERE LOWER(name) = LOWER(?) AND school_id = ? AND deleted_at IS NULL',
       [name, schoolId]
     );
     if ((dup as any[]).length) {
-      return NextResponse.json({ error: 'A subject with this name already exists.' }, { status: 409 });
+      return NextResponse.json({ error: `A subject with the name "${name}" already exists for this school.` }, { status: 409 });
     }
 
     // Insert — use query() (text protocol) to avoid TiDB prepared stmt cache issues

@@ -1711,42 +1711,39 @@ const ReportsPage = () => {
                             <p><strong>Overall Grade:</strong> <span contentEditable suppressContentEditableWarning style={{cursor: 'text'}}>{nurseryOverallGrade}</span></p>
                           )}
                         </div>
-                        <div>
-                          
-                          <div
-                            contentEditable
-                            suppressContentEditableWarning
-                            style={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between', 
-                              padding: activeLayout.assessmentBox.padding, 
-                              border: activeLayout.assessmentBox.border, 
-                              borderRadius: activeLayout.assessmentBox.borderRadius, 
-                              cursor: 'text',
-                              minHeight: '50px'
-                            }}
-                          >
-                            {
-                              (() => {
-                                const currentClass = student.class_name;
-                                const nextClass = currentClass.replace(/\d+/, (match: string) => parseInt(match) + 1);
+                        {/* Promotion status only for Term 3 end-of-term reports */}
+                        {filters.term === 'Term 3' && filters.resultType?.toLowerCase().includes('end') && (
+                          <div>
+                            <div
+                              contentEditable
+                              suppressContentEditableWarning
+                              style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                padding: activeLayout.assessmentBox.padding, 
+                                border: activeLayout.assessmentBox.border, 
+                                borderRadius: activeLayout.assessmentBox.borderRadius, 
+                                cursor: 'text',
+                                minHeight: '50px'
+                              }}
+                            >
+                              {
+                                (() => {
+                                  const currentClass = student.class_name;
+                                  const nextClass = currentClass.replace(/\d+/, (match: string) => parseInt(match) + 1);
 
-                                if (filters.resultType?.toLowerCase().includes('end')) {
                                   if (division === 'Division 1' || division === 'Division 2' || division === 'Division 3') {
                                     return `Promoted to next class `;
-                                    // return `Promoted to next class (${nextClass})`;
                                   } else if (division === 'Division 4') {
                                     return 'Advised to try the next class with remedial support';
                                   } else {
                                     return 'Advised to repeat this class';
                                   }
-                                }
-
-                                return 'Promotion status will be determined at the end of the term.';
-                              })()
-                            }
+                                })()
+                              }
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                     {/* Promotion Status Section */}
