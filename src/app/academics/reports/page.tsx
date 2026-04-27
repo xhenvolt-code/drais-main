@@ -251,10 +251,11 @@ const ReportsPage = () => {
     }
   }, [selectedTemplateId, availableDrceTemplates, curriculum]);
 
-  // Helper to get term ID (you may need to adjust based on your database)
+  // Resolve term id from loaded tenant-scoped term rows.
   const getTermId = (termName: string): string => {
-    const termMap: Record<string, string> = { 'Term 1': '1', 'Term 2': '2', 'Term 3': '3' };
-    return termMap[termName] || '1';
+    const normalized = String(termName || '').toLowerCase().trim();
+    const term = termsData.find(t => String(t.name || '').toLowerCase().trim() === normalized);
+    return term ? String(term.id) : '';
   };
 
   // Fetch promotion data if it's 3rd term
@@ -309,20 +310,31 @@ const ReportsPage = () => {
     return cleaned.replace(/[0-9]/g, d => map[d]);
   };
 
-  // Fetch academic years, terms, persisted initials and next-term date on mount
+  // Fetch academic years, terms, current term/year, persisted initials and next-term date on mount
   useEffect(() => {
-    fetch('/api/academic_years')
-      .then(r => r.json())
-      .then(data => {
-        if (data?.data) setAcademicYears(data.data);
+    Promise.all([
+      fetch('/api/academic_years').then(r => r.json()).catch(() => ({})),
+      fetch('/api/terms').then(r => r.json()).catch(() => ({})),
+      fetch('/api/academic/current-term').then(r => r.json()).catch(() => ({})),
+    ])
+      .then(([yearsRes, termsRes, currentTermRes]) => {
+        const years = Array.isArray(yearsRes?.data) ? yearsRes.data : [];
+        const terms = Array.isArray(termsRes?.data) ? termsRes.data : [];
+        setAcademicYears(years);
+        setTermsData(terms);
+
+        // Year-first discovery: always select a year by default.
+        const currentYearId = currentTermRes?.academic_year_id ? String(currentTermRes.academic_year_id) : '';
+        const fallbackYearId = years.length > 0 ? String(years[0].id) : '';
+        const nextAcademicYearId = currentYearId || fallbackYearId;
+
+        setFilters(prev => ({
+          ...prev,
+          academicYearId: prev.academicYearId || nextAcademicYearId,
+        }));
       })
       .catch(() => {});
-    fetch('/api/terms')
-      .then(r => r.json())
-      .then(data => {
-        if (data?.data) setTermsData(data.data);
-      })
-      .catch(() => {});
+
     fetch('/api/teacher-initials')
       .then(r => r.json())
       .then(data => {
@@ -353,6 +365,10 @@ const ReportsPage = () => {
     // Build query params for report fetch
     const reportParams = new URLSearchParams();
     if (filters.academicYearId) reportParams.set('academic_year_id', filters.academicYearId);
+    if (filters.term) {
+      const termId = getTermId(filters.term);
+      if (termId) reportParams.set('term_id', termId);
+    }
     const reportUrl = `/api/reports/list${reportParams.toString() ? '?' + reportParams.toString() : ''}`;
     // Use new DB (Next.js API)
     Promise.all([
@@ -402,7 +418,7 @@ const ReportsPage = () => {
         setAllResults([]);
       })
       .finally(() => setLoading(false));
-  }, [filters.academicYearId]);
+  }, [filters.academicYearId, filters.term, termsData]);
 
   // Load editable term value from localStorage on mount
   useEffect(() => {

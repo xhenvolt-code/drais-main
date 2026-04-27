@@ -40,10 +40,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
+    const normalizedName = String(name).trim();
+    const [existing]: any = await conn.execute(
+      `
+      SELECT id
+      FROM academic_years
+      WHERE school_id = ?
+        AND deleted_at IS NULL
+        AND TRIM(name) = ?
+      LIMIT 1
+      `,
+      [schoolId, normalizedName]
+    );
+    if (existing.length > 0) {
+      return NextResponse.json({ error: 'Academic year already exists' }, { status: 409 });
+    }
+
     const [result]: any = await conn.execute(
       `INSERT INTO academic_years (school_id, name, start_date, end_date, status)
        VALUES (?, ?, ?, ?, ?)`,
-      [schoolId, name, start_date || null, end_date || null, status || 'draft']
+      [schoolId, normalizedName, start_date || null, end_date || null, status || 'draft']
     );
 
     return NextResponse.json({ success: true, id: result.insertId });

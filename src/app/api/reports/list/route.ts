@@ -131,7 +131,59 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    return NextResponse.json({ success: true, data: rows });
+    const [termFacets]: any = await connection.execute(
+      `
+      SELECT
+        t.id AS term_id,
+        t.name AS term_name,
+        COALESCE(t.term_number,
+          CASE
+            WHEN LOWER(TRIM(t.name)) IN ('term 1','t1','first term') THEN 1
+            WHEN LOWER(TRIM(t.name)) IN ('term 2','t2','second term') THEN 2
+            WHEN LOWER(TRIM(t.name)) IN ('term 3','t3','third term') THEN 3
+            ELSE 99
+          END
+        ) AS term_number,
+        COUNT(DISTINCT cr.student_id) AS student_count,
+        COUNT(*) AS result_count
+      FROM class_results cr
+      JOIN students s ON s.id = cr.student_id
+      LEFT JOIN terms t ON t.id = cr.term_id
+      WHERE s.school_id = ?
+        ${academicYearId ? 'AND (cr.academic_year_id = ? OR t.academic_year_id = ?)' : ''}
+      GROUP BY t.id, t.name, term_number
+      ORDER BY term_number ASC, t.id ASC
+      `,
+      academicYearId ? [schoolId, academicYearId, academicYearId] : [schoolId]
+    );
+
+    const [classFacets]: any = await connection.execute(
+      `
+      SELECT
+        c.id AS class_id,
+        c.name AS class_name,
+        COUNT(DISTINCT cr.student_id) AS student_count,
+        COUNT(*) AS result_count
+      FROM class_results cr
+      JOIN students s ON s.id = cr.student_id
+      LEFT JOIN classes c ON c.id = cr.class_id
+      LEFT JOIN terms t ON t.id = cr.term_id
+      WHERE s.school_id = ?
+        ${academicYearId ? 'AND (cr.academic_year_id = ? OR t.academic_year_id = ?)' : ''}
+      GROUP BY c.id, c.name
+      ORDER BY c.name ASC
+      `,
+      academicYearId ? [schoolId, academicYearId, academicYearId] : [schoolId]
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: rows,
+      facets: {
+        terms: termFacets,
+        classes: classFacets,
+      },
+    });
   } catch (error: any) {
     console.error('Reports list error:', error);
     return NextResponse.json({ 
