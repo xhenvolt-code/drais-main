@@ -64,7 +64,7 @@ export async function getInitialsConfig(
   const connection = await getConnection();
 
   try {
-    // Get class_subjects record with all related data
+    // Get class_subjects record with all related data (join through classes for school_id)
     const [classSubjectsRows] = await connection.execute(
       `SELECT 
         cs.id,
@@ -76,10 +76,11 @@ export async function getInitialsConfig(
         p.first_name,
         p.last_name
        FROM class_subjects cs
+       LEFT JOIN classes c ON cs.class_id = c.id
        LEFT JOIN staff s ON cs.teacher_id = s.id
        LEFT JOIN people p ON s.person_id = p.id
-       WHERE cs.class_id = ? AND cs.subject_id = ?`,
-      [classId, subjectId]
+       WHERE cs.class_id = ? AND cs.subject_id = ? AND c.school_id = ?`,
+      [classId, subjectId, schoolId]
     ) as any[];
 
     await connection.end();
@@ -127,10 +128,11 @@ export async function getClassInitials(
         cs.custom_initials,
         CONCAT(UPPER(LEFT(p.first_name, 1)), UPPER(LEFT(p.last_name, 1))) AS auto_generated
        FROM class_subjects cs
+       LEFT JOIN classes c ON cs.class_id = c.id
        LEFT JOIN staff s ON cs.teacher_id = s.id
        LEFT JOIN people p ON s.person_id = p.id
-       WHERE cs.class_id = ?`,
-      [classId]
+       WHERE cs.class_id = ? AND c.school_id = ?`,
+      [classId, schoolId]
     ) as any[];
 
     await connection.end();

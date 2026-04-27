@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const classId = req.nextUrl.searchParams.get('classId');
   const subjectId = req.nextUrl.searchParams.get('subjectId');
 
-  let whereClause = 'WHERE cs.school_id = ? AND cs.deleted_at IS NULL';
+  let whereClause = 'WHERE c.school_id = ?';
   const params: any[] = [session.schoolId];
 
   if (classId) {

@@ -155,7 +155,10 @@ export async function GET(req: NextRequest) {
       ORDER BY term_number ASC, t.id ASC
       `,
       academicYearId ? [schoolId, academicYearId, academicYearId] : [schoolId]
-    );
+    ).catch(err => {
+      console.error('Term facets error:', err);
+      return [[]];
+    });
 
     const [classFacets]: any = await connection.execute(
       `
@@ -174,7 +177,10 @@ export async function GET(req: NextRequest) {
       ORDER BY c.name ASC
       `,
       academicYearId ? [schoolId, academicYearId, academicYearId] : [schoolId]
-    );
+    ).catch(err => {
+      console.error('Class facets error:', err);
+      return [[]];
+    });
 
     return NextResponse.json({
       success: true,
