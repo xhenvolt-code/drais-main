@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings2, GraduationCap, BookOpen, ArrowRightLeft } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import ResultTypesManager from '@/components/academics/ResultTypesManager';
@@ -13,9 +13,64 @@ const tabs = [
   { id: 'theology-results',  label: 'Theology Results',   icon: BookOpen },
 ];
 
+interface WizardData {
+  academicYears: Array<{ id: number; name: string }>;
+  terms: Array<{ id: number; name: string }>;
+  classes: Array<{ id: number; name: string }>;
+  subjects: Array<{ id: number; name: string }>;
+  resultTypes: Array<{ id: number; name: string }>;
+}
+
 export default function ResultsPage() {
   const [activeTab, setActiveTab] = useState(1); // default to Academic Results
   const [migrationOpen, setMigrationOpen] = useState(false);
+  const [wizardData, setWizardData] = useState<WizardData>({
+    academicYears: [],
+    terms: [],
+    classes: [],
+    subjects: [],
+    resultTypes: []
+  });
+  const [loadingWizardData, setLoadingWizardData] = useState(false);
+
+  // Load wizard data when component mounts or modal opens
+  useEffect(() => {
+    if (migrationOpen && wizardData.academicYears.length === 0) {
+      loadWizardData();
+    }
+  }, [migrationOpen]);
+
+  const loadWizardData = async () => {
+    setLoadingWizardData(true);
+    try {
+      const [yearsRes, termsRes, classesRes, subjectsRes, typesRes] = await Promise.all([
+        fetch('/api/academic_years'),
+        fetch('/api/terms'),
+        fetch('/api/classes'),
+        fetch('/api/subjects'),
+        fetch('/api/result-types')
+      ]);
+
+      const years = yearsRes.ok ? await yearsRes.json() : [];
+      const terms = termsRes.ok ? await termsRes.json() : [];
+      const classes = classesRes.ok ? await classesRes.json() : [];
+      const subjects = subjectsRes.ok ? await subjectsRes.json() : [];
+      const types = typesRes.ok ? await typesRes.json() : [];
+
+      setWizardData({
+        academicYears: Array.isArray(years) ? years : [],
+        terms: Array.isArray(terms) ? terms : [],
+        classes: Array.isArray(classes) ? classes : [],
+        subjects: Array.isArray(subjects) ? subjects : [],
+        resultTypes: Array.isArray(types) ? types : []
+      });
+    } catch (error) {
+      console.error('Error loading wizard data:', error);
+      // Fallback to empty arrays - UI will still work
+    } finally {
+      setLoadingWizardData(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
@@ -47,9 +102,8 @@ export default function ResultsPage() {
         {/* Right-side actions */}
         {activeTab === 1 && (
           <Button 
-            size="sm" 
-            variant="outline"
             onClick={() => setMigrationOpen(true)}
+            disabled={loadingWizardData || wizardData.academicYears.length === 0}
             className="text-xs"
           >
             <ArrowRightLeft className="w-3.5 h-3.5 mr-1.5" />
@@ -69,31 +123,11 @@ export default function ResultsPage() {
       <MarksMigrationWizard
         open={migrationOpen}
         onOpenChange={setMigrationOpen}
-        academicYears={[
-          { id: 1, name: '2024' },
-          { id: 2, name: '2025' },
-          { id: 3, name: '2026' }
-        ]}
-        terms={[
-          { id: 1, name: 'Term 1' },
-          { id: 2, name: 'Term 2' },
-          { id: 3, name: 'Term 3' }
-        ]}
-        classes={[
-          { id: 1, name: 'Form 1' },
-          { id: 2, name: 'Form 2' },
-          { id: 3, name: 'Form 3' },
-          { id: 4, name: 'Form 4' }
-        ]}
-        subjects={[
-          { id: 1, name: 'Mathematics' },
-          { id: 2, name: 'English' },
-          { id: 3, name: 'Science' }
-        ]}
-        resultTypes={[
-          { id: 1, name: 'Midterm' },
-          { id: 2, name: 'Endterm' }
-        ]}
+        academicYears={wizardData.academicYears}
+        terms={wizardData.terms}
+        classes={wizardData.classes}
+        subjects={wizardData.subjects}
+        resultTypes={wizardData.resultTypes}
         onMigrationComplete={(result) => {
           console.log('Migration complete:', result);
           // Optionally refresh results

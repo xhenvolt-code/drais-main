@@ -71,7 +71,7 @@ export async function getInitialsConfig(
         cs.class_id,
         cs.subject_id,
         cs.teacher_id,
-        cs.custom_initials,
+        NULL AS custom_initials,
         CONCAT(UPPER(LEFT(p.first_name, 1)), UPPER(LEFT(p.last_name, 1))) AS auto_generated,
         p.first_name,
         p.last_name
@@ -125,7 +125,7 @@ export async function getClassInitials(
         cs.class_id,
         cs.subject_id,
         cs.teacher_id,
-        cs.custom_initials,
+        NULL AS custom_initials,
         CONCAT(UPPER(LEFT(p.first_name, 1)), UPPER(LEFT(p.last_name, 1))) AS auto_generated
        FROM class_subjects cs
        LEFT JOIN classes c ON cs.class_id = c.id

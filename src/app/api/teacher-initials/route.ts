@@ -28,14 +28,11 @@ export async function GET(req: NextRequest) {
       cs.class_id,
       cs.subject_id,
       cs.teacher_id,
-      cs.custom_initials,
+      NULL AS custom_initials,
       c.name AS class_name,
       sub.name AS subject_name,
       sub.code AS subject_code,
-      COALESCE(
-        cs.custom_initials,
-        CONCAT(UPPER(LEFT(p.first_name, 1)), UPPER(LEFT(p.last_name, 1)))
-      ) AS display_initials,
+      CONCAT(UPPER(LEFT(p.first_name, 1)), UPPER(LEFT(p.last_name, 1))) AS display_initials,
       p.first_name AS teacher_first_name,
       p.last_name AS teacher_last_name,
       CONCAT(p.first_name, ' ', p.last_name) AS teacher_full_name
