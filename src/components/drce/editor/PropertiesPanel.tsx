@@ -718,11 +718,84 @@ function AssessmentPanel({ section, onMutate }: { section: DRCEAssessmentSection
   const style = section.style as Record<string, unknown>;
   return (
     <div className="p-3">
+      <PanelSection title="Layout">
+        <Row label="Layout">
+          <SelectInput value={String(style.layout ?? 'table')} onChange={v => set('layout', v)} options={[
+            { label: 'Table', value: 'table' },
+            { label: 'Flex', value: 'flex' },
+          ]} />
+        </Row>
+        <Row label="Width">
+          <TextInput value={String(style.width ?? '100%')} onChange={v => set('width', v)} placeholder="100% or 520px" />
+        </Row>
+        <Row label="Min width">
+          <TextInput value={String(style.minWidth ?? '')} onChange={v => set('minWidth', v)} placeholder="240px" />
+        </Row>
+        <Row label="Max width">
+          <TextInput value={String(style.maxWidth ?? '')} onChange={v => set('maxWidth', v)} placeholder="100%" />
+        </Row>
+        <Row label="Min height">
+          <TextInput value={String(style.minHeight ?? '')} onChange={v => set('minHeight', v)} placeholder="80px" />
+        </Row>
+        <Row label="Inner padding">
+          <TextInput value={String(style.padding ?? '10px 20px')} onChange={v => set('padding', v)} placeholder="10px 20px" />
+        </Row>
+        <Row label="Outer margin">
+          <TextInput value={String(style.margin ?? '')} onChange={v => set('margin', v)} placeholder="0 auto" />
+        </Row>
+      </PanelSection>
+      <PanelSection title="Table">
+        <Row label="Split fields">
+          <NumberInput value={Number(style.positionFields ?? 2)} onChange={v => set('positionFields', v)} min={0} max={Math.max(section.fields.length, 1)} />
+        </Row>
+        <Row label="Group label">
+          <TextInput value={String(style.assessmentLabel ?? 'Grade Assessment')} onChange={v => set('assessmentLabel', v)} placeholder="Grade Assessment" />
+        </Row>
+        <Row label="Table layout">
+          <SelectInput value={String(style.tableLayout ?? 'fixed')} onChange={v => set('tableLayout', v)} options={[
+            { label: 'Fixed', value: 'fixed' },
+            { label: 'Auto', value: 'auto' },
+          ]} />
+        </Row>
+        <Row label="Cell padding">
+          <TextInput value={String(style.cellPadding ?? '2px 8px')} onChange={v => set('cellPadding', v)} placeholder="2px 8px" />
+        </Row>
+      </PanelSection>
+      <PanelSection title="Flex Layout">
+        <Row label="Item min width">
+          <NumberInput value={Number(style.itemMinWidth ?? 160)} onChange={v => set('itemMinWidth', v)} min={80} max={480} />
+        </Row>
+        <Row label="Row gap">
+          <NumberInput value={Number(style.rowGap ?? 4)} onChange={v => set('rowGap', v)} min={0} max={40} />
+        </Row>
+        <Row label="Column gap">
+          <NumberInput value={Number(style.columnGap ?? 16)} onChange={v => set('columnGap', v)} min={0} max={60} />
+        </Row>
+      </PanelSection>
+      <PanelSection title="Typography">
+        <Row label="Header size">
+          <NumberInput value={Number(style.headerFontSize ?? 11)} onChange={v => set('headerFontSize', v)} min={8} max={24} />
+        </Row>
+        <Row label="Label size">
+          <NumberInput value={Number(style.labelFontSize ?? 10)} onChange={v => set('labelFontSize', v)} min={8} max={24} />
+        </Row>
+        <Row label="Value size">
+          <NumberInput value={Number(style.valueFontSize ?? 12)} onChange={v => set('valueFontSize', v)} min={8} max={28} />
+        </Row>
+        <Row label="Value weight">
+          <SelectInput value={String(style.valueFontWeight ?? 'bold')} onChange={v => set('valueFontWeight', v)} options={[
+            { label: 'Bold', value: 'bold' },
+            { label: 'Normal', value: 'normal' },
+            { label: 'Semibold', value: '600' },
+          ]} />
+        </Row>
+      </PanelSection>
       <PanelSection title="Style">
-        <Row label="Border"><TextInput value={String(style.border ?? '1px solid #ccc')} onChange={v => set('border', v)} /></Row>
+        <Row label="Border"><TextInput value={String(style.border ?? '1px solid #ccc')} onChange={v => set('border', v)} placeholder="1px solid #ccc" /></Row>
         <Row label="Border radius"><NumberInput value={Number(style.borderRadius ?? 8)} onChange={v => set('borderRadius', v)} min={0} max={32} /></Row>
-        <Row label="Padding"><TextInput value={String(style.padding ?? '10px 20px')} onChange={v => set('padding', v)} /></Row>
         <Row label="Background"><ColorInput value={String(style.background ?? '#f9f9f9')} onChange={v => set('background', v)} /></Row>
+        <Row label="Header bg"><ColorInput value={String(style.headerBackground ?? '#f2f2f2')} onChange={v => set('headerBackground', v)} /></Row>
+        <Row label="Border colour"><ColorInput value={String(style.borderColor ?? '#cccccc')} onChange={v => set('borderColor', v)} /></Row>
         <Row label="Label colour"><ColorInput value={String(style.labelColor ?? '#444444')} onChange={v => set('labelColor', v)} /></Row>
         <Row label="Value colour"><ColorInput value={String(style.valueColor ?? '#000000')} onChange={v => set('valueColor', v)} /></Row>
       </PanelSection>

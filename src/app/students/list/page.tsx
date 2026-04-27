@@ -124,6 +124,7 @@ export default function StudentsListPage() {
   const [search, setSearch] = useState('');
   const [filterClassId, setFilterClassId] = useState<number>(0);
   const [filterYearId, setFilterYearId]   = useState<number>(0);
+  const [filterGender, setFilterGender] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showExportMenu, setShowExportMenu] = useState(false);
 
@@ -132,7 +133,7 @@ export default function StudentsListPage() {
   const [page, setPage] = useState(1);
 
   // Inline editing — per-field state (matches ClassResultsManager pattern)
-  const [editingCell, setEditingCell] = useState<{ studentId: number; field: 'first_name' | 'last_name' } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ studentId: number; field: 'first_name' | 'last_name' | 'gender' } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [isPendingName, startNameTransition] = useTransition();
 
@@ -646,9 +647,9 @@ export default function StudentsListPage() {
     setShowFees(v => !v);
   };
 
-  // ── Per-field inline name editing (ClassResultsManager pattern) ──
-  const updateName = (student: Student, field: 'first_name' | 'last_name', value: string) => {
-    const original = field === 'first_name' ? student.first_name : student.last_name;
+  // ── Per-field inline editing (names + gender) ──
+  const updateStudentField = (student: Student, field: 'first_name' | 'last_name' | 'gender', value: string) => {
+    const original = String(student[field as keyof Student] ?? '');
     if (value === original) return;
 
     const savingToast = toast.loading('Saving…', { duration: Infinity });
@@ -680,7 +681,7 @@ export default function StudentsListPage() {
         toast.dismiss(savingToast);
         setEnrolledStudents(prev => prev.map(s => s.id === student.id ? { ...s, [field]: original } : s));
         setAdmittedStudents(prev => prev.map(s => s.id === student.id ? { ...s, [field]: original } : s));
-        toast.error('Failed to save name');
+          toast.error('Failed to save changes');
       }
     });
   };
@@ -946,9 +947,15 @@ export default function StudentsListPage() {
 
   const currentData = activeTab === 'enrolled' ? enrolledStudents : admittedStudents;
 
-  const filteredData = useMemo(() => safeMultiFieldFilter(
-    currentData, search, ['first_name', 'last_name', 'admission_no']
-  ), [currentData, search]);
+  const filteredData = useMemo(() => {
+    const base = safeMultiFieldFilter(
+      currentData,
+      search,
+      ['first_name', 'last_name', 'admission_no']
+    );
+    if (filterGender === 'all') return base;
+    return base.filter((s: Student) => String(s.gender || '').toLowerCase() === filterGender.toLowerCase());
+  }, [currentData, search, filterGender]);
 
   // Client-side pagination
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
@@ -989,7 +996,7 @@ export default function StudentsListPage() {
 
     const saveCell = (field: 'first_name' | 'last_name') => {
       if (editingCell?.studentId === student.id && editingCell.field === field) {
-        updateName(student, field, editValue);
+        updateStudentField(student, field, editValue);
         setEditingCell(null);
         setEditValue('');
       }
@@ -1049,6 +1056,45 @@ export default function StudentsListPage() {
           )}
         </div>
       </div>
+    );
+  };
+
+  const GenderCell = ({ student }: { student: Student }) => {
+    const isEditing = editingCell?.studentId === student.id && editingCell.field === 'gender';
+    const currentGender = String(student.gender || '').toLowerCase();
+
+    if (isEditing) {
+      return (
+        <select
+          autoFocus
+          value={editValue}
+          onChange={e => setEditValue(e.target.value)}
+          onBlur={() => {
+            updateStudentField(student, 'gender', editValue);
+            setEditingCell(null);
+            setEditValue('');
+          }}
+          className="h-7 px-2 rounded-md border border-indigo-400 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      );
+    }
+
+    const label = currentGender === 'male' ? 'Male' : currentGender === 'female' ? 'Female' : '—';
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setEditingCell({ studentId: student.id, field: 'gender' });
+          setEditValue(currentGender === 'female' ? 'female' : 'male');
+        }}
+        className="text-xs text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border-b border-transparent hover:border-slate-300 transition-colors capitalize"
+        title="Click to edit gender"
+      >
+        {label}
+      </button>
     );
   };
 
@@ -1132,13 +1178,35 @@ export default function StudentsListPage() {
               <ChevronDown className="absolute right-1.5 w-3 h-3 text-slate-400 pointer-events-none" />
             </div>
 
-            {(filterClassId !== 0 || filterYearId !== 0) && (
-              <button onClick={() => { setFilterClassId(0); setFilterYearId(0); resetPage(); }}
+            {(filterClassId !== 0 || filterYearId !== 0 || filterGender !== 'all') && (
+              <button onClick={() => { setFilterClassId(0); setFilterYearId(0); setFilterGender('all'); resetPage(); }}
                 className="flex items-center gap-0.5 h-8 px-2 rounded-lg text-[10px] text-slate-500 hover:text-red-500 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors">
                 <X className="w-3 h-3" />
               </button>
             )}
           </>
+        )}
+
+        {/* Gender filter (all tabs) */}
+        <div className="relative hidden sm:flex items-center">
+          <select
+            value={filterGender}
+            onChange={e => { setFilterGender(e.target.value); resetPage(); }}
+            className="h-8 pl-2.5 pr-6 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+          >
+            <option value="all">All genders</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+          <ChevronDown className="absolute right-1.5 w-3 h-3 text-slate-400 pointer-events-none" />
+        </div>
+        {activeTab !== 'enrolled' && filterGender !== 'all' && (
+          <button
+            onClick={() => { setFilterGender('all'); resetPage(); }}
+            className="hidden sm:flex items-center gap-0.5 h-8 px-2 rounded-lg text-[10px] text-slate-500 hover:text-red-500 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
         )}
 
         {/* Spacer */}
@@ -1392,9 +1460,10 @@ export default function StudentsListPage() {
                   <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Admitted</th>
                 )}
                 <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Status</th>
-                <th className="px-3 py-2.5 text-right text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden lg:table-cell whitespace-nowrap">
-                  {activeTab === 'enrolled' ? 'Balance' : 'Gender'}
-                </th>
+                <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden lg:table-cell whitespace-nowrap">Gender</th>
+                {activeTab === 'enrolled' && (
+                  <th className="px-3 py-2.5 text-right text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden xl:table-cell whitespace-nowrap">Balance</th>
+                )}
                 <th className="w-9 px-3 py-2.5" />
               </tr>
             </thead>
@@ -1403,7 +1472,7 @@ export default function StudentsListPage() {
                 Array.from({ length: 12 }).map((_, i) => <SkeletonRow key={i} />)
               ) : pageData.length === 0 ? (
                 <tr>
-                  <td colSpan={activeTab === 'enrolled' ? 8 : 7} className="px-4 py-20 text-center">
+                  <td colSpan={activeTab === 'enrolled' ? 11 : 8} className="px-4 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                         <Users className="w-6 h-6 text-slate-400" />
@@ -1544,9 +1613,15 @@ export default function StudentsListPage() {
                         <StatusBadge status={(student as any).status ?? (activeTab === 'enrolled' ? (enrolled.enrollment_status ?? 'active') : 'admitted')} />
                       </td>
 
-                      {/* Balance (enrolled) or Gender (admitted) — always shown */}
-                      <td className="px-3 py-2.5 hidden lg:table-cell text-right whitespace-nowrap">
-                        {activeTab === 'enrolled' ? (
+                      {/* Gender (inline editable for quick correction) */}
+                      <td className="px-3 py-2.5 hidden lg:table-cell whitespace-nowrap">
+                        <GenderCell student={student} />
+                      </td>
+
+                      {/* Balance (enrolled only) */}
+                      {activeTab === 'enrolled' && (
+                      <td className="px-3 py-2.5 hidden xl:table-cell text-right whitespace-nowrap">
+                        {(
                           feesLoading ? (
                             <span className="inline-block w-12 h-3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
                           ) : (() => {
@@ -1571,10 +1646,9 @@ export default function StudentsListPage() {
                               </Link>
                             );
                           })()
-                        ) : (
-                          <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{student.gender || '—'}</span>
                         )}
                       </td>
+                      )}
 
                       {/* Row actions */}
                       <td className="px-3 py-2.5 w-16">

@@ -158,7 +158,29 @@ export function SectionListPanel({ sections, selectedId, onSelect, onMutate }: P
       case 'assessment':
         return { ...base, type: 'assessment',
           fields: [{ id: `af-${Date.now()}`, label: 'Class Position', binding: 'assessment.classPosition', visible: true, order: 0 }],
-          style: {} } as DRCESection;
+          style: {
+            layout: 'table',
+            width: '100%',
+            positionFields: 1,
+            assessmentLabel: 'Grade Assessment',
+            tableLayout: 'fixed',
+            cellPadding: '2px 8px',
+            headerFontSize: 11,
+            labelFontSize: 10,
+            valueFontSize: 12,
+            valueFontWeight: 'bold',
+            border: '1px solid #ccc',
+            borderRadius: 8,
+            padding: '10px 20px',
+            background: '#f9f9f9',
+            headerBackground: '#f2f2f2',
+            borderColor: '#cccccc',
+            labelColor: '#444444',
+            valueColor: '#000000',
+            itemMinWidth: 160,
+            rowGap: 4,
+            columnGap: 16,
+          } } as DRCESection;
       case 'comments':
         return { ...base, type: 'comments',
           items: [{ id: `ci-${Date.now()}`, label: 'Teacher Comment', binding: 'comments.classTeacher', visible: true, order: 0 }],

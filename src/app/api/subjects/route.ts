@@ -82,13 +82,14 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type');
     const academicType = searchParams.get('academic_type');
     const search = searchParams.get('search') || '';
-    const rawPage = Number.parseInt(searchParams.get('page') || '1', 10);
-    const rawLimit = Number.parseInt(searchParams.get('limit') || '100', 10);
-    const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
-    const limit = Number.isFinite(rawLimit) && rawLimit > 0
-      ? Math.min(100, rawLimit)
-      : 100;
-    const offset = (page - 1) * limit;
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const rawPage = pageParam ? Number.parseInt(pageParam, 10) : NaN;
+    const rawLimit = limitParam ? Number.parseInt(limitParam, 10) : NaN;
+    const usePagination = Number.isFinite(rawPage) && rawPage > 0 && Number.isFinite(rawLimit) && rawLimit > 0;
+    const page = usePagination ? rawPage : 1;
+    const limit = usePagination ? rawLimit : null;
+    const offset = usePagination && limit ? (page - 1) * limit : 0;
 
     connection = await getConnection();
 
@@ -116,17 +117,20 @@ export async function GET(req: NextRequest) {
     const [countResult]: any = await connection.execute(countSql, params);
     const total = countResult[0]?.total || 0;
 
-    // TiDB can reject prepared placeholders in LIMIT/OFFSET, so keep
-    // filters parameterized and inline the already-sanitized pagination values.
-    sql += ` ORDER BY name ASC LIMIT ${limit} OFFSET ${offset}`;
+    sql += ' ORDER BY name ASC';
+    if (usePagination && limit) {
+      // TiDB can reject prepared placeholders in LIMIT/OFFSET, so keep
+      // filters parameterized and inline the already-sanitized pagination values.
+      sql += ` LIMIT ${limit} OFFSET ${offset}`;
+    }
 
     const [rows] = await connection.query(sql, params);
-    return NextResponse.json({ 
-      data: rows, 
+    return NextResponse.json({
+      data: rows,
       total,
       page,
       limit,
-      pages: Math.ceil(total / limit)
+      pages: usePagination && limit ? Math.ceil(total / limit) : 1
     });
   } catch (e: any) {
     console.error('Subjects GET error:', e);

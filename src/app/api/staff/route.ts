@@ -15,9 +15,14 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     // school_id derived from session below
-    const page = parseInt(searchParams.get('page', 10) || '1');
-    const limit = parseInt(searchParams.get('limit', 10) || '50');
-    const offset = Math.max(0, (page - 1) * limit);
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const rawPage = pageParam ? parseInt(pageParam, 10) : NaN;
+    const rawLimit = limitParam ? parseInt(limitParam, 10) : NaN;
+    const usePagination = Number.isFinite(rawPage) && rawPage > 0 && Number.isFinite(rawLimit) && rawLimit > 0;
+    const page = usePagination ? rawPage : 1;
+    const limit = usePagination ? rawLimit : null;
+    const offset = usePagination && limit ? Math.max(0, (page - 1) * limit) : 0;
 
     connection = await getConnection();
 
@@ -45,8 +50,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Get basic staff data
-    const [staffRows] = await connection.execute(`
-      SELECT 
+    let sql = `
+      SELECT
         s.id,
         s.staff_no,
         s.position,
@@ -63,8 +68,12 @@ export async function GET(req: NextRequest) {
       JOIN people p ON s.person_id = p.id
       WHERE s.school_id = ? AND s.deleted_at IS NULL
       ORDER BY p.first_name, p.last_name
-      LIMIT ${Math.max(1, limit)} OFFSET ${Math.max(0, offset)}
-    `, [schoolId]);
+    `;
+    if (usePagination && limit) {
+      sql += ` LIMIT ${Math.max(1, limit)} OFFSET ${Math.max(0, offset)}`;
+    }
+
+    const [staffRows] = await connection.execute(sql, [schoolId]);
 
     // Count total records
     const [countRows] = await connection.execute(`
@@ -83,7 +92,7 @@ export async function GET(req: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: usePagination && limit ? Math.ceil(total / limit) : 1
       }
     });
 

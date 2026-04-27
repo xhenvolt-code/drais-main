@@ -16,19 +16,51 @@ export function AssessmentSection({ section, theme, ctx }: Props) {
 
   const style = section.style as Record<string, unknown>;
   const layout = String(style.layout ?? 'table');
+  const labelColor = String(style.labelColor ?? '#444444');
+  const valueColor = String(style.valueColor ?? theme.secondaryColor);
+  const headerBackground = String(style.headerBackground ?? '#f2f2f2');
+  const borderColor = String(style.borderColor ?? '#ccc');
+  const headerFontSize = Number(style.headerFontSize ?? 11);
+  const labelFontSize = Number(style.labelFontSize ?? 10);
+  const valueFontSize = Number(style.valueFontSize ?? 12);
+  const valueFontWeight = String(style.valueFontWeight ?? 'bold');
+  const cellPadding = String(style.cellPadding ?? '2px 8px');
+  const rowGap = Number(style.rowGap ?? 4);
+  const columnGap = Number(style.columnGap ?? 16);
+  const itemMinWidth = Number(style.itemMinWidth ?? 160);
+  const tableLayout = String(style.tableLayout ?? 'fixed');
+  const groupHeader = String(style.assessmentLabel ?? 'Grade Assessment');
 
   const visibleFields = [...(section.fields || [])]
     .filter(f => f.visible)
     .sort((a, b) => a.order - b.order);
 
   if (layout === 'flex' || visibleFields.length === 0) {
-    // Simple flex fallback
     return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', margin: '6px 0', fontFamily: theme.fontFamily }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: `${rowGap}px ${columnGap}px`,
+          margin: 0,
+          width: '100%',
+          fontFamily: theme.fontFamily,
+          boxSizing: 'border-box',
+        }}
+      >
         {visibleFields.map(field => (
-          <div key={field.id} style={{ flex: '1 1 160px', display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ color: '#555', fontSize: theme.baseFontSize - 1 }}>{field.label}:</span>
-            <span style={{ color: theme.secondaryColor, fontWeight: 'bold', fontSize: theme.baseFontSize }}>
+          <div
+            key={field.id}
+            style={{
+              flex: `1 1 ${itemMinWidth}px`,
+              minWidth: itemMinWidth,
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 4,
+            }}
+          >
+            <span style={{ color: labelColor, fontSize: labelFontSize }}>{field.label}:</span>
+            <span style={{ color: valueColor, fontWeight: valueFontWeight, fontSize: valueFontSize }}>
               {resolveBinding(field.binding, ctx)}
             </span>
           </div>
@@ -42,31 +74,39 @@ export function AssessmentSection({ section, theme, ctx }: Props) {
   const posFields = visibleFields.slice(0, positionCount);
   const assFields = visibleFields.slice(positionCount);
 
-  const borderColor = String(style.borderColor ?? '#ccc');
-
   const cell: React.CSSProperties = {
     border: `1px solid ${borderColor}`,
-    padding: '2px 8px',
-    fontSize: 11,
+    padding: cellPadding,
+    fontSize: labelFontSize,
     fontFamily: theme.fontFamily,
+    boxSizing: 'border-box',
   };
   const headerCell: React.CSSProperties = {
     ...cell,
-    background: String(style.headerBackground ?? '#f2f2f2'),
+    background: headerBackground,
     fontWeight: 'bold',
     textAlign: 'center',
+    fontSize: headerFontSize,
   };
-  const labelCell: React.CSSProperties = { ...cell, textAlign: 'center', fontSize: 10, color: '#444' };
+  const labelCell: React.CSSProperties = { ...cell, textAlign: 'center', fontSize: labelFontSize, color: labelColor };
   const valueCell: React.CSSProperties = {
     ...cell,
-    color: String(style.valueColor ?? theme.secondaryColor),
-    fontWeight: 'bold',
+    color: valueColor,
+    fontWeight: valueFontWeight,
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: valueFontSize,
   };
 
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', margin: '4px 0', fontFamily: theme.fontFamily }}>
+    <table
+      style={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        margin: 0,
+        fontFamily: theme.fontFamily,
+        tableLayout: tableLayout === 'auto' ? 'auto' : 'fixed',
+      }}
+    >
       <tbody>
         {/* Header row: Position | Grade Assessment */}
         <tr>
@@ -75,7 +115,7 @@ export function AssessmentSection({ section, theme, ctx }: Props) {
           )}
           {assFields.length > 0 && (
             <td style={headerCell} colSpan={assFields.length}>
-              {String(style.assessmentLabel ?? 'Grade Assessment')}
+              {groupHeader}
             </td>
           )}
         </tr>
@@ -97,4 +137,3 @@ export function AssessmentSection({ section, theme, ctx }: Props) {
     </table>
   );
 }
-

@@ -43,7 +43,7 @@ function InlineBarcode({
   for (let i = 0; i < Math.min(safeValue.length, 18); i++) {
     const code = safeValue.charCodeAt(i) % 10;
     const w = pattern[code];
-    bars.push(<rect key={i} x={x} y={0} width={w} height={height} fill="#000" />);
+    bars.push(<rect key={i} x={x} y={0} width={w} height={height} fill="#111" />);
     x += w + 1.5;
     // thin white gap bar every few chars for readability
     if (i % 3 === 2) { bars.push(<rect key={`g${i}`} x={x} y={0} width={1} height={height} fill="#fff" />); x += 1; }
@@ -58,7 +58,7 @@ function InlineBarcode({
       height={totalHeight}
       viewBox={`0 0 ${totalW} ${totalHeight}`}
       preserveAspectRatio="xMidYMin meet"
-      style={{ display: 'block', margin: 'auto' }}
+      style={{ display: 'block', margin: '0 auto', border: '0.5px solid #111', background: '#fff' }}
       aria-label={`Barcode ${labelText}`}
     >
       {bars}
@@ -91,12 +91,12 @@ export function StudentInfoSection({ section, ctx }: Props) {
   const showPhoto       = style.showPhoto       !== false;
   const fieldsPerRow    = style.fieldsPerRow    ?? 4;
   const barcodeRotation = style.barcodeRotation ?? 0;
-  const barcodeWidth    = style.barcodeWidth    ?? 36;
-  const barcodeHeight   = style.barcodeHeight   ?? 52;
+  const barcodeWidth    = style.barcodeWidth    ?? 44;
+  const barcodeHeight   = style.barcodeHeight   ?? 64;
   const barcodeLabelSpacing = style.barcodeLabelSpacing ?? 1;
   const barcodeLabelFontSize = style.barcodeLabelFontSize ?? 7;
   // Cell width adjusts to barcode width with some padding
-  const barcodeCellWidth = barcodeWidth + 10;
+  const barcodeCellWidth = barcodeWidth + 2;
 
   const visibleFields = [...(section.fields || [])]
     .filter(f => f.visible)
@@ -133,8 +133,7 @@ export function StudentInfoSection({ section, ctx }: Props) {
                 width: barcodeCellWidth,
                 textAlign: 'center',
                 verticalAlign: 'middle',
-                padding: '2px 2px',
-                borderRight: '1px solid #eee',
+                padding: '0 1px 0 0',
               }}>
                  {/* Barcode + student number grouped so they rotate together */}
                  <div style={{
@@ -155,13 +154,13 @@ export function StudentInfoSection({ section, ctx }: Props) {
 
             {/* ── Photo column ──────────────────────────────────── */}
              {showPhoto && (
-               <td style={{ width: 98, textAlign: 'center', verticalAlign: 'middle', padding: 4 }}>
+               <td style={{ width: 94, textAlign: 'center', verticalAlign: 'middle', padding: '0 2px 0 0' }}>
                  {/* eslint-disable-next-line @next/next/no-img-element */}
                  <img
                    src={student.photoUrl || '/default-avatar.png'}
                    alt={student.fullName || 'Student'}
                    style={{
-                     width: 90, height: 100,
+                     width: 88, height: 98,
                      objectFit: 'cover',
                      border: '1px solid #000',
                      display: 'block',
