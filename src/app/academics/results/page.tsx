@@ -36,6 +36,7 @@ export default function ResultsPage() {
   // Load wizard data when component mounts or modal opens
   useEffect(() => {
     if (migrationOpen && wizardData.academicYears.length === 0) {
+      console.log('[Migration] Opening modal, loading data...');
       loadWizardData();
     }
   }, [migrationOpen]);
@@ -102,7 +103,10 @@ export default function ResultsPage() {
         {/* Right-side actions */}
         {activeTab === 1 && (
           <Button 
-            onClick={() => setMigrationOpen(true)}
+            onClick={() => {
+              console.log('[Migration] Button clicked, setting migrationOpen to true');
+              setMigrationOpen(true);
+            }}
             disabled={loadingWizardData || wizardData.academicYears.length === 0}
             className="text-xs"
           >
