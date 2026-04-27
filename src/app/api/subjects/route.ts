@@ -82,8 +82,12 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type');
     const academicType = searchParams.get('academic_type');
     const search = searchParams.get('search') || '';
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
+    const rawPage = Number.parseInt(searchParams.get('page') || '1', 10);
+    const rawLimit = Number.parseInt(searchParams.get('limit') || '10', 10);
+    const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(100, rawLimit)
+      : 10;
     const offset = (page - 1) * limit;
 
     connection = await getConnection();
@@ -112,11 +116,11 @@ export async function GET(req: NextRequest) {
     const [countResult]: any = await connection.execute(countSql, params);
     const total = countResult[0]?.total || 0;
 
-    // Get paginated results
-    sql += ' ORDER BY name ASC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
-    
-    const [rows] = await connection.execute(sql, params);
+    // TiDB can reject prepared placeholders in LIMIT/OFFSET, so keep
+    // filters parameterized and inline the already-sanitized pagination values.
+    sql += ` ORDER BY name ASC LIMIT ${limit} OFFSET ${offset}`;
+
+    const [rows] = await connection.query(sql, params);
     return NextResponse.json({ 
       data: rows, 
       total,

@@ -206,53 +206,48 @@ const ReportsPage = () => {
   // ── Template engine: active layout JSON loaded from /api/report-templates/active
   const [activeLayout, setActiveLayout] = useState<ReportLayoutJSON>(DEFAULT_TEMPLATE_JSON);
 
-  // ── Template switching (Phase 1 & 8)
-  // Registry keys: 'default' | 'arabic' | 'dual' | 'default-clone' | 'arabic-clone' | 'drce'
-  const templateRegistry = {
-    default: 'default',
-    arabic: 'arabic',
-    dual: 'dual',
-    'default-clone': 'default-clone',
-    'arabic-clone': 'arabic-clone',
-    drce: 'drce',
-  } as const;
-  type TemplateKey = keyof typeof templateRegistry;
-
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey>('default');
+  // ── Dynamic template system (Phase 9: DRCE Migration)
+  // All templates are now loaded from DRCE database
+  const [availableDrceTemplates, setAvailableDrceTemplates] = useState<DRCEDocument[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [activeDrceDoc, setActiveDrceDoc] = useState<DRCEDocument | null>(null);
   const [curriculum, setCurriculum] = useState<'all' | 'secular' | 'theology'>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'ar'>('en');
 
+  // Fetch all available DRCE templates
   useEffect(() => {
-    fetch('/api/report-templates/active')
+    fetch('/api/dvcf/documents')
       .then(r => r.json())
       .then(data => {
-        if (data?.template?.layout_json?.page) {
-          setActiveLayout(data.template.layout_json);
+        if (data?.documents && Array.isArray(data.documents)) {
+          setAvailableDrceTemplates(data.documents as DRCEDocument[]);
+          
+          // Auto-select the first default template
+          const defaultTemplate = data.documents.find((t: DRCEDocument) => t.meta.is_default);
+          if (defaultTemplate) {
+            setSelectedTemplateId(defaultTemplate.meta.template_key || defaultTemplate.meta.id);
+            setActiveDrceDoc(defaultTemplate);
+          }
         }
       })
-      .catch(() => { /* keep default */ });
+      .catch(err => {
+        console.warn('Failed to load DRCE templates:', err);
+      });
   }, []);
 
-  // ── Fetch the active DRCE / Kitchen template for this school
+  // When selected template changes, update active DRCE document
   useEffect(() => {
-    fetch('/api/dvcf/active?type=report_card')
-      .then(r => r.json())
-      .then(data => {
-        if (data?.document) {
-          setActiveDrceDoc(data.document as DRCEDocument);
-          // Auto-select the DRCE template so it is used immediately
-          setSelectedTemplate('drce');
-        }
-      })
-      .catch(() => { /* no active DRCE doc */ });
-  }, []);
-
-  // Phase 8: log template + curriculum on every switch
-  useEffect(() => {
-    const resolved = templateRegistry[selectedTemplate] ?? 'default';
-    console.log('Rendering template:', resolved, '| curriculum:', curriculum);
-  }, [selectedTemplate, curriculum]);
+    if (!selectedTemplateId) return;
+    
+    const selected = availableDrceTemplates.find(
+      t => t.meta.template_key === selectedTemplateId || t.meta.id === selectedTemplateId
+    );
+    
+    if (selected) {
+      setActiveDrceDoc(selected);
+      console.log('Rendering template:', selected.meta.name, '| curriculum:', curriculum);
+    }
+  }, [selectedTemplateId, availableDrceTemplates, curriculum]);
 
   // Helper to get term ID (you may need to adjust based on your database)
   const getTermId = (termName: string): string => {
@@ -961,7 +956,9 @@ const ReportsPage = () => {
   useEffect(() => {
     const STYLE_ID = 'drais-print-page-size';
     let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
-    if (selectedTemplate === 'dual') {
+    // Check if active template uses landscape orientation
+    const isLandscape = activeDrceDoc?.theme?.orientation === 'landscape';
+    if (isLandscape) {
       if (!el) {
         el = document.createElement('style');
         el.id = STYLE_ID;
@@ -972,7 +969,7 @@ const ReportsPage = () => {
       el?.remove();
     }
     return () => { document.getElementById(STYLE_ID)?.remove(); };
-  }, [selectedTemplate]);
+  }, [activeDrceDoc?.theme?.orientation]);
 
   return (
     <TeacherInitialsContext.Provider value={{ teacherInitials, handleInitialsChange }}>
@@ -1071,24 +1068,25 @@ const ReportsPage = () => {
             className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors min-w-[160px]"
           />
 
-          {/* Template selector — Phase 1 */}
+          {/* Template selector — Phase 9: Dynamic DRCE templates */}
           <select
-            value={selectedTemplate}
+            value={selectedTemplateId || ''}
             onChange={(e) => {
-              const key = e.target.value as TemplateKey;
-              setSelectedTemplate(templateRegistry[key] ? key : 'default');
+              const key = e.target.value;
+              setSelectedTemplateId(key);
             }}
             className="h-9 border border-gray-300 rounded-lg px-3 text-sm bg-white shadow-sm hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
             title="Select report template"
           >
-            {activeDrceDoc && (
-              <option value="drce">{(activeDrceDoc.meta as any)?.name ?? 'Custom Template (Kitchen)'}</option>
+            {availableDrceTemplates.length === 0 ? (
+              <option value="">Loading templates...</option>
+            ) : (
+              availableDrceTemplates.map(template => (
+                <option key={template.meta.id} value={template.meta.template_key || template.meta.id}>
+                  {template.meta.name}
+                </option>
+              ))
             )}
-            <option value="default">Default Template</option>
-            <option value="arabic">Arabic Template</option>
-            <option value="dual">Dual Curriculum</option>
-            <option value="default-clone">Default (Clone)</option>
-            <option value="arabic-clone">Arabic (Clone)</option>
           </select>
 
           {/* Curriculum filter — Phase 2 */}
@@ -1189,9 +1187,10 @@ const ReportsPage = () => {
               <div className="classHeading text-2xl font-bold text-center my-0">{classGroup && classGroup.className ? classGroup.className : 'Unknown Class'}</div>
               {classGroup && Array.isArray(classGroup.students) && classGroup.students.map((student: any) => {
                 if (!student) return null;
-                // ── Phase 2: apply curriculum filter to results client-side
-                // The dual template always receives all results (it splits them internally).
-                const isCurriculumFiltered = selectedTemplate !== 'dual' && curriculum !== 'all';
+                // ── Phase 9: apply curriculum filter to results client-side
+                // The dual curriculum template always receives all results (it splits them internally).
+                const isDualCurriculum = selectedTemplateId === 'dual_curriculum_template';
+                const isCurriculumFiltered = !isDualCurriculum && curriculum !== 'all';
                 const filteredStudentResults: Result[] = isCurriculumFiltered
                   ? (Array.isArray(student.results) ? student.results : []).filter((r: Result) => {
                       if (!r) return false;
@@ -1260,8 +1259,8 @@ const ReportsPage = () => {
                   division = adjustDivisionForF9(division, coreGrades);
                 }
 
-                // ── DRCE: render the template activated via Template Kitchen
-                if (selectedTemplate === 'drce' && activeDrceDoc) {
+                // ── Phase 9: Unified DRCE rendering (all templates now DRCE documents)
+                if (activeDrceDoc) {
                   const drceData: DRCEDataContext = {
                     student: {
                       fullName: `${student.first_name} ${student.last_name}`,
@@ -1390,35 +1389,8 @@ const ReportsPage = () => {
                   );
                 }
 
-                // ── Phase 3: Render DualCurriculumTemplate for 'dual' selection
-                if (selectedTemplate === 'dual') {
-                  return (
-                    <DualCurriculumTemplate
-                      key={student.student_id}
-                      student={{ ...student, results: filteredStudentResults }}
-                      schoolInfo={schoolInfo}
-                      activeLayout={activeLayout}
-                      isEndOfTerm={isEndOfTerm}
-                      enableMarkConversion={enableMarkConversion}
-                      editableTermValue={editableTermValue}
-                      nextTermBegins={nextTermBegins}
-                      division={division}
-                      aggregates={aggregates}
-                      isNursery={isNursery}
-                      nurseryOverallGrade={nurseryOverallGrade}
-                      teacherInitials={teacherInitials}
-                      onInitialsChange={handleInitialsChange}
-                      onInitialsSave={saveInitialsToBackend}
-                      onNextTermChange={handleNextTermChange}
-                      onLogoUpload={handleLogoUpload}
-                    />
-                  );
-                }
-
-                // ── Phase 1 & 5: 'arabic' / 'arabic-clone' = RTL-first default layout
-                // The standard layout already renders Arabic on the right; marking it here
-                // confirms the template key resolved correctly.
-                const isArabicMode = selectedTemplate === 'arabic' || selectedTemplate === 'arabic-clone';
+                // ── Fallback: if no DRCE doc available (should not happen with new system)
+                const isArabicMode = selectedTemplateId === 'arabic_template' || selectedTemplateId === 'arabic_clone_template';
 
                 return (
                   <div key={student.student_id} className="reportPage" data-report-page="true" style={{
