@@ -54,6 +54,20 @@ function renderSection(
   }
 }
 
+function getSectionWrapperStyle(section: DRCESection, isSelected: boolean, isInteractive: boolean): React.CSSProperties {
+  const sectionStyle = (section as { style?: { spacingTop?: number; spacingBottom?: number } }).style;
+
+  return {
+    marginTop: (sectionStyle?.spacingTop ?? 0) || undefined,
+    marginBottom: (sectionStyle?.spacingBottom ?? 0) || undefined,
+    cursor: isInteractive ? 'pointer' : undefined,
+    outline: isSelected ? '2px solid #6366f1' : undefined,
+    outlineOffset: isSelected ? 2 : undefined,
+    borderRadius: isSelected ? 2 : undefined,
+    transition: isInteractive ? 'outline 0.1s' : undefined,
+  };
+}
+
 export function DRCEDocumentRenderer({
   document,
   dataCtx,
@@ -127,27 +141,15 @@ export function DRCEDocumentRenderer({
           if (!rendered) return null;
 
           const isSelected = selectedSectionId === section.id;
-          if (onSectionClick) {
-            return (
-              <div
-                key={section.id}
-                onClick={() => onSectionClick(section.id)}
-                style={{
-                  cursor: 'pointer',
-                  outline: isSelected ? `2px solid #6366f1` : '2px solid transparent',
-                  outlineOffset: 2,
-                  borderRadius: 2,
-                  transition: 'outline 0.1s',
-                  marginTop: ((section as { style?: { spacingTop?: number } }).style?.spacingTop ?? 0) || undefined,
-                  marginBottom: ((section as { style?: { spacingBottom?: number } }).style?.spacingBottom ?? 0) || undefined,
-                }}
-              >
-                {rendered}
-              </div>
-            );
-          }
-
-          return <React.Fragment key={section.id}>{rendered}</React.Fragment>;
+          return (
+            <div
+              key={section.id}
+              onClick={onSectionClick ? () => onSectionClick(section.id) : undefined}
+              style={getSectionWrapperStyle(section, isSelected, Boolean(onSectionClick))}
+            >
+              {rendered}
+            </div>
+          );
         })}
       </div>
     </div>

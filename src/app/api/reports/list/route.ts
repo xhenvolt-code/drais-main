@@ -79,6 +79,46 @@ export async function GET(req: NextRequest) {
         sub.name as subject_name,
         COALESCE(sub.name_ar, '') as name_ar,
         sub.subject_type,
+        (
+          SELECT CONCAT_WS(' ', tp.first_name, tp.last_name)
+          FROM class_subjects cs2
+          LEFT JOIN staff ts ON ts.id = cs2.teacher_id
+          LEFT JOIN people tp ON tp.id = ts.person_id
+          WHERE cs2.class_id = cr.class_id
+            AND cs2.subject_id = cr.subject_id
+            AND (cr.term_id IS NULL OR cs2.term_id = cr.term_id OR cs2.term_id IS NULL)
+            AND (e.stream_id IS NULL OR cs2.stream_id = e.stream_id OR cs2.stream_id IS NULL)
+          ORDER BY
+            CASE WHEN cr.term_id IS NOT NULL AND cs2.term_id = cr.term_id THEN 0 ELSE 1 END,
+            CASE WHEN e.stream_id IS NOT NULL AND cs2.stream_id = e.stream_id THEN 0 ELSE 1 END,
+            CASE WHEN cs2.stream_id IS NULL THEN 1 ELSE 0 END,
+            CASE WHEN cs2.term_id IS NULL THEN 1 ELSE 0 END,
+            cs2.id DESC
+          LIMIT 1
+        ) AS teacher_name,
+        (
+          SELECT COALESCE(
+            NULLIF(TRIM(ts.initials), ''),
+            NULLIF(CONCAT(
+              COALESCE(LEFT(tp.first_name, 1), ''),
+              COALESCE(LEFT(tp.last_name, 1), '')
+            ), '')
+          )
+          FROM class_subjects cs2
+          LEFT JOIN staff ts ON ts.id = cs2.teacher_id
+          LEFT JOIN people tp ON tp.id = ts.person_id
+          WHERE cs2.class_id = cr.class_id
+            AND cs2.subject_id = cr.subject_id
+            AND (cr.term_id IS NULL OR cs2.term_id = cr.term_id OR cs2.term_id IS NULL)
+            AND (e.stream_id IS NULL OR cs2.stream_id = e.stream_id OR cs2.stream_id IS NULL)
+          ORDER BY
+            CASE WHEN cr.term_id IS NOT NULL AND cs2.term_id = cr.term_id THEN 0 ELSE 1 END,
+            CASE WHEN e.stream_id IS NOT NULL AND cs2.stream_id = e.stream_id THEN 0 ELSE 1 END,
+            CASE WHEN cs2.stream_id IS NULL THEN 1 ELSE 0 END,
+            CASE WHEN cs2.term_id IS NULL THEN 1 ELSE 0 END,
+            cs2.id DESC
+          LIMIT 1
+        ) AS teacher_initials,
         rt.name as result_type_name,
         t.name as term_name,
         COALESCE(ay.name, ay2.name) as academic_year_name,

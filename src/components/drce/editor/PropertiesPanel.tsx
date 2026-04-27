@@ -1207,8 +1207,11 @@ function RulesPanel({ doc, onMutate }: { doc: DRCEDocument; onMutate: (m: DRCEMu
       </PanelSection>
 
       {/* Teacher Mappings */}
-      <PanelSection title="Teacher Initials (subject → initials)">
+      <PanelSection title="Teacher Initials (class + subject fallback)">
         <div className="space-y-2">
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+            Reports now use Class Subject Assignments first. Add mappings here only as a DRCE fallback for exact class/subject initials.
+          </p>
           {teacherMappings.map(mapping => (
             <div key={mapping.id} className="border border-gray-200 dark:border-slate-600 rounded p-2 space-y-1 text-xs">
               <div className="flex items-center gap-1">

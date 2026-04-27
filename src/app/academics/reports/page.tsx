@@ -72,9 +72,11 @@ interface ClassGroup {
 }
 
 interface GroupedResult {
+  subject_id?: number;
   subject_name: string;
   name_ar?: string;
   teacher_name?: string;
+  teacher_initials?: string;
   midTermScore: number | null;
   endTermScore: number | null;
   regularScore: number | null;
@@ -686,9 +688,11 @@ const ReportsPage = () => {
       
       if (!grouped[subjectKey]) {
         grouped[subjectKey] = {
+          subject_id: result.subject_id,
           subject_name: result.subject_name || `Subject ${subjectKey}`,
           name_ar: result.name_ar,
           teacher_name: result.teacher_name,
+          teacher_initials: result.teacher_initials,
           midTermScore: null,
           endTermScore: null,
           regularScore: null,
@@ -1276,8 +1280,18 @@ const ReportsPage = () => {
                     results: allGroupedResults.map(r => {
                       const { midTermMarks, endTermMarks, totalMarks: tM } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
                       const scoreForGrade = isEndOfTerm ? tM : midTermMarks;
-                      // Resolve teacher initials from kitchen mappings first
+                      const manualInitials =
+                        (student.class_id != null && r.subject_id != null
+                          ? teacherInitials[`${student.class_id}-${r.subject_id}`]
+                          : undefined) ||
+                        teacherInitials[`${student.class_name}-${r.subject_name}`];
+
+                      // Resolve teacher initials from explicit overrides first, then DB assignments,
+                      // then DRCE mappings, and finally derive from the teacher's name.
                       const resolvedInitials = (() => {
+                        if (manualInitials) return manualInitials;
+                        if (r.teacher_initials?.trim()) return r.teacher_initials.trim();
+
                         const maps = activeDrceDoc.teacherMappings;
                         if (maps?.length) {
                           const subj = (r.subject_name || '').toLowerCase();
