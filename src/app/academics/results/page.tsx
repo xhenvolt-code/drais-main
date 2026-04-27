@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { Settings2, GraduationCap, BookOpen, ArrowRightLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Button from '@/components/ui/Button.jsx';
 import ResultTypesManager from '@/components/academics/ResultTypesManager';
 import ClassResultsManager from '@/components/academics/ClassResultsManager';
 import TheologyResultsManager from '@/components/academics/TheologyResultsManager';

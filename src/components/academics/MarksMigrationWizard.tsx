@@ -1,38 +1,16 @@
 'use client';
 
-/**
- * Marks Migration Wizard Modal
- * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- * 
- * Multi-step wizard for controlled, safe marks migration:
- * STEP 1: Selection (academic year, term, class, subjects)
- * STEP 2: Analysis (impact preview, conflict detection)
- * STEP 3: Preview (learner-by-learner mark changes)
- * STEP 4: Conflict Resolution (strategy selection)
- * STEP 5: Confirmation & Execution
- */
-
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button.jsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from '@/components/ui/Select';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface MigrationWizardProps {
   open: boolean;
@@ -45,7 +23,7 @@ interface MigrationWizardProps {
   onMigrationComplete?: (result: any) => void;
 }
 
-type WizardStep = 'selection' | 'analysis' | 'preview' | 'resolution' | 'confirmation';
+type WizardStep = 'selection' | 'preview' | 'resolution' | 'confirmation';
 
 interface SelectionState {
   academicYearId: string;
@@ -59,11 +37,8 @@ interface SelectionState {
 interface MigrationAnalysis {
   totalLearnersAffected: number;
   learnersWithMarks: number;
-  assessmentsInvolved: string[];
   conflictCount: number;
   conflicts: any[];
-  noConflicts: any[];
-  destinationHasExistingMarks: number;
   preview: any[];
 }
 
@@ -93,7 +68,6 @@ export function MarksMigrationWizard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // STEP 1: Selection form validation
   const isSelectionValid =
     selection.academicYearId &&
     selection.termId &&
@@ -103,7 +77,6 @@ export function MarksMigrationWizard({
     selection.resultTypeId &&
     selection.sourceSubjectId !== selection.destinationSubjectId;
 
-  // Analyze migration impact
   const handleAnalyze = async () => {
     setLoading(true);
     setError(null);
@@ -129,7 +102,7 @@ export function MarksMigrationWizard({
 
       const data = await response.json();
       setAnalysis(data.analysis);
-      setCurrentStep('analysis');
+      setCurrentStep('preview');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -137,7 +110,6 @@ export function MarksMigrationWizard({
     }
   };
 
-  // Execute migration
   const handleExecute = async () => {
     setLoading(true);
     setError(null);
@@ -165,7 +137,8 @@ export function MarksMigrationWizard({
 
       const data = await response.json();
       onMigrationComplete?.(data.migration);
-      onOpenChange(false);
+      setCurrentStep('confirmation');
+      setTimeout(() => onOpenChange(false), 2000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -177,35 +150,48 @@ export function MarksMigrationWizard({
   const destSubjectName = subjects.find(s => s.id === parseInt(selection.destinationSubjectId))?.name;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Migrate Subject Marks</DialogTitle>
-          <DialogDescription>
-            Safely migrate marks from one subject to another with conflict detection and preview
-          </DialogDescription>
-        </DialogHeader>
-
+    <Modal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title="Migrate Subject Marks"
+      size="lg"
+    >
+      <div className="space-y-6 py-4">
         {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-red-900">Error</h4>
+              <p className="text-sm text-red-800 mt-1">{error}</p>
+            </div>
+          </div>
         )}
 
-        {/* STEP 1: Selection */}
+        <div className="flex gap-2 justify-center">
+          {(['selection', 'preview', 'resolution', 'confirmation'] as const).map((step) => (
+            <div
+              key={step}
+              className={`h-2 flex-1 rounded-full transition-colors ${
+                step === currentStep ? 'bg-blue-600' :
+                (['selection', 'preview', 'resolution', 'confirmation'] as const).indexOf(currentStep) > (['selection', 'preview', 'resolution', 'confirmation'] as const).indexOf(step) ? 'bg-green-600' :
+                'bg-gray-200'
+              }`}
+            />
+          ))}
+        </div>
+
         {currentStep === 'selection' && (
           <div className="space-y-4">
-            <h3 className="font-semibold">Step 1: Select Migration Parameters</h3>
+            <h3 className="font-semibold text-lg">Step 1: Select Migration Parameters</h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="academic-year">Academic Year</Label>
+                <label className="block text-sm font-medium mb-2">Academic Year</label>
                 <Select
                   value={selection.academicYearId}
                   onValueChange={(v) => setSelection({...selection, academicYearId: v})}
                 >
-                  <SelectTrigger id="academic-year">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
                   <SelectContent>
@@ -219,12 +205,12 @@ export function MarksMigrationWizard({
               </div>
 
               <div>
-                <Label htmlFor="term">Term</Label>
+                <label className="block text-sm font-medium mb-2">Term</label>
                 <Select
                   value={selection.termId}
                   onValueChange={(v) => setSelection({...selection, termId: v})}
                 >
-                  <SelectTrigger id="term">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select term" />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,12 +224,12 @@ export function MarksMigrationWizard({
               </div>
 
               <div>
-                <Label htmlFor="class">Class</Label>
+                <label className="block text-sm font-medium mb-2">Class</label>
                 <Select
                   value={selection.classId}
                   onValueChange={(v) => setSelection({...selection, classId: v})}
                 >
-                  <SelectTrigger id="class">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
                   <SelectContent>
@@ -257,12 +243,12 @@ export function MarksMigrationWizard({
               </div>
 
               <div>
-                <Label htmlFor="result-type">Result Type</Label>
+                <label className="block text-sm font-medium mb-2">Result Type</label>
                 <Select
                   value={selection.resultTypeId}
                   onValueChange={(v) => setSelection({...selection, resultTypeId: v})}
                 >
-                  <SelectTrigger id="result-type">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -276,12 +262,12 @@ export function MarksMigrationWizard({
               </div>
 
               <div>
-                <Label htmlFor="source-subject">FROM Subject (Wrong)</Label>
+                <label className="block text-sm font-medium mb-2">FROM Subject (Wrong)</label>
                 <Select
                   value={selection.sourceSubjectId}
                   onValueChange={(v) => setSelection({...selection, sourceSubjectId: v})}
                 >
-                  <SelectTrigger id="source-subject">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
                   <SelectContent>
@@ -295,12 +281,12 @@ export function MarksMigrationWizard({
               </div>
 
               <div>
-                <Label htmlFor="destination-subject">TO Subject (Correct)</Label>
+                <label className="block text-sm font-medium mb-2">TO Subject (Correct)</label>
                 <Select
                   value={selection.destinationSubjectId}
                   onValueChange={(v) => setSelection({...selection, destinationSubjectId: v})}
                 >
-                  <SelectTrigger id="destination-subject">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select destination" />
                   </SelectTrigger>
                   <SelectContent>
@@ -316,252 +302,179 @@ export function MarksMigrationWizard({
           </div>
         )}
 
-        {/* STEP 2: Analysis */}
-        {currentStep === 'analysis' && analysis && (
-          <div className="space-y-4">
-            <h3 className="font-semibold">Step 2: Impact Analysis</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <Alert>
-                <CheckCircle2 className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Learners with marks:</strong> {analysis.learnersWithMarks}
-                </AlertDescription>
-              </Alert>
-
-              {analysis.conflictCount > 0 && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Conflicts:</strong> {analysis.conflictCount} learners have existing marks in destination
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-
-            {analysis.assessmentsInvolved.length > 0 && (
-              <div>
-                <Label>Assessments Involved</Label>
-                <p className="text-sm text-gray-600">
-                  {analysis.assessmentsInvolved.join(', ')}
-                </p>
-              </div>
-            )}
-
-            <div>
-              <Label>Destination Status</Label>
-              <p className="text-sm text-gray-600">
-                {analysis.destinationHasExistingMarks > 0
-                  ? `${analysis.destinationHasExistingMarks} learners already have marks in destination`
-                  : 'No existing marks in destination subject'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: Preview */}
         {currentStep === 'preview' && analysis && (
           <div className="space-y-4">
-            <h3 className="font-semibold">Step 3: Preview Learner Impact</h3>
+            <h3 className="font-semibold text-lg">Step 2: Migration Analysis</h3>
             
-            <div className="max-h-80 overflow-y-auto border rounded">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100 sticky top-0">
-                  <tr>
-                    <th className="text-left p-2">Learner</th>
-                    <th className="text-left p-2">Admission No</th>
-                    <th className="text-center p-2">{sourceSubjectName}</th>
-                    <th className="text-center p-2">{destSubjectName}</th>
-                    <th className="text-center p-2">After Migration</th>
-                    <th className="text-center p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analysis.preview.map((learner, idx) => (
-                    <tr key={idx} className={learner.hasConflict ? 'bg-red-50' : ''}>
-                      <td className="p-2">{learner.studentName}</td>
-                      <td className="p-2">{learner.admissionNo}</td>
-                      <td className="text-center p-2">{learner.currentSourceMark?.toFixed(2) || '-'}</td>
-                      <td className="text-center p-2">{learner.currentDestinationMark?.toFixed(2) || '-'}</td>
-                      <td className="text-center p-2 font-semibold">{learner.afterMigrationMark?.toFixed(2) || '-'}</td>
-                      <td className="text-center p-2">
-                        {learner.hasConflict ? (
-                          <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                            Conflict
-                          </span>
-                        ) : (
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                            OK
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 4: Conflict Resolution */}
-        {currentStep === 'resolution' && (
-          <div className="space-y-4">
-            <h3 className="font-semibold">Step 4: Conflict Resolution Strategy</h3>
-            
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {analysis?.conflictCount === 0
-                  ? 'No conflicts detected - you can proceed safely'
-                  : `${analysis?.conflictCount} learners have existing marks in destination`}
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-3">
-              <Label>How should conflicts be handled?</Label>
-
-              <div className="space-y-2">
-                <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50"
-                  onClick={() => setConflictResolution('skip')}>
-                  <input
-                    type="radio"
-                    checked={conflictResolution === 'skip'}
-                    readOnly
-                    className="mr-3"
-                  />
-                  <div>
-                    <div className="font-medium">Skip Conflicting Learners</div>
-                    <div className="text-xs text-gray-600">
-                      Keep destination marks as-is, don't migrate for learners with existing marks
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50"
-                  onClick={() => setConflictResolution('overwrite')}>
-                  <input
-                    type="radio"
-                    checked={conflictResolution === 'overwrite'}
-                    readOnly
-                    className="mr-3"
-                  />
-                  <div>
-                    <div className="font-medium">Overwrite Destination</div>
-                    <div className="text-xs text-gray-600">
-                      Replace destination marks with source marks
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50"
-                  onClick={() => setConflictResolution('merge')}>
-                  <input
-                    type="radio"
-                    checked={conflictResolution === 'merge'}
-                    readOnly
-                    className="mr-3"
-                  />
-                  <div>
-                    <div className="font-medium">Merge (Average)</div>
-                    <div className="text-xs text-gray-600">
-                      Average source and destination marks
-                    </div>
-                  </div>
-                </label>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Total Learners</p>
+                <p className="text-2xl font-bold text-blue-600">{analysis.totalLearnersAffected}</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">With Marks</p>
+                <p className="text-2xl font-bold text-green-600">{analysis.learnersWithMarks}</p>
+              </div>
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Conflicts</p>
+                <p className="text-2xl font-bold text-orange-600">{analysis.conflictCount}</p>
               </div>
             </div>
 
+            {analysis.preview && analysis.preview.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium mb-2">Preview</h4>
+                <div className="max-h-64 overflow-y-auto border rounded-lg">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-gray-100 border-b">
+                      <tr>
+                        <th className="px-4 py-2 text-left">Learner</th>
+                        <th className="px-4 py-2 text-center">Source</th>
+                        <th className="px-4 py-2 text-center">Dest</th>
+                        <th className="px-4 py-2 text-left">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analysis.preview.slice(0, 10).map((item, idx) => (
+                        <tr key={idx} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-2 text-sm">{item.studentName || 'N/A'}</td>
+                          <td className="px-4 py-2 text-center text-sm">{item.sourceMarks !== null ? item.sourceMarks : '-'}</td>
+                          <td className="px-4 py-2 text-center text-sm">{item.destinationMarks !== null ? item.destinationMarks : '-'}</td>
+                          <td className="px-4 py-2 text-sm">
+                            {item.conflict ? (
+                              <span className="text-orange-600 text-xs font-medium">⚠ Conflict</span>
+                            ) : (
+                              <span className="text-green-600 text-xs font-medium">✓ OK</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentStep === 'resolution' && (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Step 3: Conflict Resolution</h3>
+            
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="resolution"
+                  value="skip"
+                  checked={conflictResolution === 'skip'}
+                  onChange={(e) => setConflictResolution(e.target.value as any)}
+                  className="w-4 h-4"
+                />
+                <div>
+                  <p className="font-medium">Skip Conflicts</p>
+                  <p className="text-sm text-gray-600">Leave existing marks unchanged</p>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="resolution"
+                  value="overwrite"
+                  checked={conflictResolution === 'overwrite'}
+                  onChange={(e) => setConflictResolution(e.target.value as any)}
+                  className="w-4 h-4"
+                />
+                <div>
+                  <p className="font-medium">Overwrite</p>
+                  <p className="text-sm text-gray-600">Replace existing marks with new ones</p>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="resolution"
+                  value="merge"
+                  checked={conflictResolution === 'merge'}
+                  onChange={(e) => setConflictResolution(e.target.value as any)}
+                  className="w-4 h-4"
+                />
+                <div>
+                  <p className="font-medium">Merge (Average)</p>
+                  <p className="text-sm text-gray-600">Take average of both marks</p>
+                </div>
+              </label>
+            </div>
+
             <div>
-              <Label htmlFor="reason">Migration Reason (Optional)</Label>
+              <label className="block text-sm font-medium mb-2">Reason for Migration</label>
               <textarea
-                id="reason"
-                className="w-full border rounded p-2 text-sm"
-                placeholder="Document why this migration is needed..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                rows={3}
+                placeholder="Explain why this migration is necessary..."
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
               />
             </div>
           </div>
         )}
 
-        {/* STEP 5: Confirmation */}
         {currentStep === 'confirmation' && (
-          <div className="space-y-4">
-            <h3 className="font-semibold">Step 5: Confirm & Execute</h3>
-            
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Review the migration details below before confirming. This action is transactional but irreversible without rollback.
-              </AlertDescription>
-            </Alert>
-
-            <div className="bg-gray-50 p-4 rounded space-y-2 text-sm">
-              <div><strong>From Subject:</strong> {sourceSubjectName}</div>
-              <div><strong>To Subject:</strong> {destSubjectName}</div>
-              <div><strong>Learners Affected:</strong> {analysis?.learnersWithMarks}</div>
-              <div><strong>Conflicts:</strong> {analysis?.conflictCount}</div>
-              <div><strong>Strategy:</strong> {conflictResolution}</div>
-              {reason && <div><strong>Reason:</strong> {reason}</div>}
+          <div className="text-center space-y-4">
+            <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
+            <div>
+              <h3 className="font-semibold text-lg">Migration Complete!</h3>
+              <p className="text-gray-600 text-sm mt-1">
+                Successfully migrated marks from {sourceSubjectName} to {destSubjectName}
+              </p>
             </div>
           </div>
         )}
 
-        <DialogFooter className="gap-2">
+        <div className="flex gap-3 justify-end pt-4 border-t">
           <Button
-            variant="outline"
             onClick={() => {
               if (currentStep === 'selection') {
                 onOpenChange(false);
-              } else if (currentStep === 'analysis') {
-                setCurrentStep('selection');
               } else if (currentStep === 'preview') {
-                setCurrentStep('analysis');
+                setCurrentStep('selection');
               } else if (currentStep === 'resolution') {
                 setCurrentStep('preview');
-              } else if (currentStep === 'confirmation') {
-                setCurrentStep('resolution');
               }
             }}
+            disabled={currentStep === 'confirmation' || loading}
           >
             Back
           </Button>
 
-          {currentStep !== 'confirmation' && (
-            <Button
-              onClick={() => {
-                if (currentStep === 'selection') {
-                  handleAnalyze();
-                } else if (currentStep === 'analysis') {
-                  setCurrentStep('preview');
-                } else if (currentStep === 'preview') {
-                  setCurrentStep('resolution');
-                } else if (currentStep === 'resolution') {
-                  setCurrentStep('confirmation');
-                }
-              }}
-              disabled={
-                (currentStep === 'selection' && !isSelectionValid) ||
-                loading
+          <Button
+            onClick={() => {
+              if (currentStep === 'selection') {
+                handleAnalyze();
+              } else if (currentStep === 'preview') {
+                setCurrentStep('resolution');
+              } else if (currentStep === 'resolution') {
+                handleExecute();
               }
-            >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Next
-            </Button>
-          )}
-
-          {currentStep === 'confirmation' && (
-            <Button
-              onClick={handleExecute}
-              disabled={loading}
-            >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Execute Migration
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            }}
+            disabled={
+              (currentStep === 'selection' && !isSelectionValid) ||
+              loading ||
+              currentStep === 'confirmation'
+            }
+          >
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {currentStep === 'selection' && 'Analyze'}
+            {currentStep === 'preview' && 'Continue'}
+            {currentStep === 'resolution' && 'Execute'}
+            {currentStep === 'confirmation' && 'Done'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
+
+export default MarksMigrationWizard;
