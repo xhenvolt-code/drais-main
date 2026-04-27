@@ -71,6 +71,7 @@ function getSectionWrapperStyle(section: DRCESection, isSelected: boolean, isInt
     minHeight: (sectionStyle.minHeight as string | number | undefined) ?? undefined,
     maxWidth: (sectionStyle.maxWidth as string | number | undefined) ?? undefined,
     maxHeight: (sectionStyle.maxHeight as string | number | undefined) ?? undefined,
+    border: (sectionStyle.border as string | undefined) ?? undefined,
     padding: (sectionStyle.padding as string | number | undefined) ?? undefined,
     margin: (sectionStyle.margin as string | number | undefined) ?? undefined,
     marginTop: (sectionStyle.spacingTop as number | undefined) ?? undefined,
