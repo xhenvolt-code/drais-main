@@ -113,4 +113,9 @@ export const AVAILABLE_BINDINGS: Array<{ group: string; binding: string; label: 
   { group: 'Report Meta',    binding: 'meta.year',             label: 'Academic Year' },
   { group: 'Report Meta',    binding: 'meta.reportTitle',      label: 'Report Title' },
   { group: 'Report Meta',    binding: 'meta.schoolName',       label: 'School Name' },
+  { group: 'Report Meta',    binding: 'meta.schoolAddress',    label: 'School Address' },
+  { group: 'Report Meta',    binding: 'meta.schoolContact',    label: 'School Contact' },
+  { group: 'Report Meta',    binding: 'meta.schoolEmail',      label: 'School Email' },
+  { group: 'Report Meta',    binding: 'meta.centerNo',         label: 'UNEB Center Number' },
+  { group: 'Report Meta',    binding: 'meta.registrationNo',   label: 'Registration Number' },
 ];

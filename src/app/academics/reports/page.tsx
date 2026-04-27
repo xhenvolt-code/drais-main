@@ -1361,6 +1361,7 @@ const ReportsPage = () => {
                       schoolName: schoolInfo.name,
                       schoolAddress: schoolInfo.address || '',
                       schoolContact: schoolInfo.contact || '',
+                      schoolEmail: schoolInfo.email || '',
                       centerNo: schoolInfo.center_no || '',
                       registrationNo: schoolInfo.registration_no || '',
                       arabicName: schoolInfo.arabic_name || null,

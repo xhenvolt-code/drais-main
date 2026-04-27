@@ -40,7 +40,7 @@ const PREVIEW_DATA: DRCEDataContext = {
   },
   meta: {
     term: 'Term 1', year: '2026', reportTitle: 'END OF TERM I REPORT CARD 2026',
-    schoolName: '', schoolAddress: '', schoolContact: '', centerNo: '', registrationNo: '',
+    schoolName: '', schoolAddress: '', schoolContact: '', schoolEmail: '', centerNo: '', registrationNo: '',
     arabicName: null, arabicAddress: null, logoUrl: null,
   },
 };

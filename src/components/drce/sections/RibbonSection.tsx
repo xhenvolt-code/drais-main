@@ -11,48 +11,119 @@ interface Props {
   ctx: DRCEDataContext;
 }
 
-// 7-sided ribbon: rectangle body + small centred downward arrow at the bottom.
-// Exact replica of rpt.html: points="0,5 600,5 600,30 315,30 300,45 285,30 0,30"
-function ArrowDownRibbon({ text, style }: { text: string; style: React.CSSProperties }) {
-  const bg    = (style.backgroundColor as string) || '#999';
-  const color = (style.color as string)           || '#000';
-  const fontSize = (style.fontSize as number)     || 12;
-  // viewBox 600×50 keeps the same proportions as the original SVG.
-  // Text sits in the rectangle (y 0–30); arrow tip reaches y=45.
-  return (
-    <div style={{ textAlign: 'center', margin: '0 0 4px 0', position: 'relative', height: 46 }}>
-      <svg viewBox="0 0 600 50" width="100%" height="46" preserveAspectRatio="none">
-        {/* Rectangle (0→30) + small centred arrow (30→45), 30 px wide each side */}
-        <polygon
-          points="0,0 600,0 600,30 315,30 300,45 285,30 0,30"
-          fill={bg}
-        />
-      </svg>
-      {/* Text label sits inside the rectangle portion */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: 30, color, fontSize, fontWeight: 'bold',
-      }}>
-        {text}
-      </div>
-    </div>
-  );
-}
+function RibbonPrimitive({
+  text,
+  section,
+}: {
+  text: string;
+  section: DRCERibbonSection;
+}) {
+  const { style, content } = section;
+  const width = style.width ?? 600;
+  const height = style.height ?? 46;
+  const bodyHeight = Math.max(14, height - (style.tailDepth ?? 14));
+  const tailDepth = Math.max(0, style.tailDepth ?? 14);
+  const chevronDepth = Math.max(0, style.chevronDepth ?? 16);
+  const strokeWidth = Math.max(0, style.strokeWidth ?? 0);
+  const layerCount = Math.max(1, style.layerCount ?? 1);
+  const layerOffset = style.layerOffset ?? 3;
+  const cornerRadius = Math.max(0, style.cornerRadius ?? 0);
+  const textOffsetY = style.textOffsetY ?? 0;
+  const svgScale = style.svgScale ?? 1;
+  const rotation = style.rotation ?? 0;
+  const fill = style.background ?? '#999';
+  const stroke = style.strokeColor ?? 'transparent';
+  const textColor = style.color ?? '#000';
+  const fontSize = style.fontSize ?? 12;
 
-function ChevronRibbon({ text, style }: { text: string; style: React.CSSProperties }) {
-  const bg = (style.backgroundColor as string) || '#999';
-  const color = (style.color as string) || '#000';
-  const fontSize = (style.fontSize as number) || 12;
+  const makePath = (offset: number) => {
+    const left = 0 + offset;
+    const right = width - offset;
+    const top = 0 + offset;
+    const bottom = bodyHeight - offset;
+    const centerX = width / 2;
+    const tailAngle = Math.max(10, Math.min(80, style.tailAngle ?? 45));
+    const tailHalf = tailDepth / Math.tan((tailAngle * Math.PI) / 180);
+    const arrowLeft = centerX - Math.max(8, tailHalf);
+    const arrowRight = centerX + Math.max(8, tailHalf);
+
+    if (content.shape === 'chevron') {
+      return `M ${left + cornerRadius} ${top}
+              L ${right - chevronDepth} ${top}
+              L ${right} ${(top + bottom) / 2}
+              L ${right - chevronDepth} ${bottom}
+              L ${left + cornerRadius} ${bottom}
+              Z`;
+    }
+    if (content.shape === 'arrow-down') {
+      return `M ${left + cornerRadius} ${top}
+              L ${right - cornerRadius} ${top}
+              L ${right} ${top + cornerRadius}
+              L ${right} ${bottom}
+              L ${arrowRight} ${bottom}
+              L ${centerX} ${bottom + tailDepth}
+              L ${arrowLeft} ${bottom}
+              L ${left} ${bottom}
+              L ${left} ${top + cornerRadius}
+              Z`;
+    }
+    return `M ${left + cornerRadius} ${top}
+            L ${right - cornerRadius} ${top}
+            L ${right} ${top + cornerRadius}
+            L ${right} ${bottom - cornerRadius}
+            L ${right - cornerRadius} ${bottom}
+            L ${left + cornerRadius} ${bottom}
+            L ${left} ${bottom - cornerRadius}
+            L ${left} ${top + cornerRadius}
+            Z`;
+  };
+
+  const shadowEnabled = style.shadowEnabled ?? false;
+  const shadowBlur = style.shadowBlur ?? 6;
+  const shadowColor = style.shadowColor ?? 'rgba(0,0,0,0.2)';
+
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', margin: '2px 0' }}>
-      <div style={{
-        flex: 1, background: bg, color, fontSize,
-        fontWeight: 'bold', padding: '4px 12px 4px 8px',
-        clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)',
-      }}>
-        {text}
-      </div>
+    <div
+      style={{
+        margin: '2px 0',
+        transform: `scale(${svgScale}) rotate(${rotation}deg)`,
+        transformOrigin: 'center',
+      }}
+    >
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none">
+        {shadowEnabled && (
+          <defs>
+            <filter id={`ribbon-shadow-${section.id}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="1.2" stdDeviation={shadowBlur / 2.5} floodColor={shadowColor} />
+            </filter>
+          </defs>
+        )}
+        {Array.from({ length: layerCount }).map((_, idx) => {
+          const reverseIndex = layerCount - idx - 1;
+          const offset = reverseIndex * layerOffset;
+          return (
+            <path
+              key={idx}
+              d={makePath(offset)}
+              fill={fill}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+              filter={shadowEnabled ? `url(#ribbon-shadow-${section.id})` : undefined}
+            />
+          );
+        })}
+        <text
+          x={width / 2}
+          y={(bodyHeight / 2) + textOffsetY}
+          dominantBaseline="middle"
+          textAnchor="middle"
+          fill={textColor}
+          fontSize={fontSize}
+          fontWeight={style.fontWeight ?? 'bold'}
+        >
+          {text}
+        </text>
+      </svg>
     </div>
   );
 }
@@ -71,7 +142,8 @@ export function RibbonSection({ section, theme, ctx }: Props) {
     textAlign: style.textAlign ?? 'center',
   };
 
-  if (content.shape === 'arrow-down') return <ArrowDownRibbon text={text} style={cssStyle} />;
-  if (content.shape === 'chevron') return <ChevronRibbon text={text} style={cssStyle} />;
+  if (content.shape === 'arrow-down' || content.shape === 'chevron') {
+    return <RibbonPrimitive text={text} section={section} />;
+  }
   return <div style={cssStyle}>{text}</div>;
 }

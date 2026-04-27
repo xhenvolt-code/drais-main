@@ -55,15 +55,47 @@ function renderSection(
 }
 
 function getSectionWrapperStyle(section: DRCESection, isSelected: boolean, isInteractive: boolean): React.CSSProperties {
-  const sectionStyle = (section as { style?: { spacingTop?: number; spacingBottom?: number } }).style;
+  const sectionStyle = (section as { style?: Record<string, unknown> }).style ?? {};
+  const borderWidth = Number(sectionStyle.borderWidth ?? 0);
+  const borderStyle = (sectionStyle.borderStyle as string | undefined) ?? 'solid';
+  const borderColor = (sectionStyle.borderColor as string | undefined) ?? '#111827';
+  const positioning = (sectionStyle.position as string | undefined) ?? 'relative';
+  const rotate = Number(sectionStyle.rotation ?? 0);
+  const scale = Number(sectionStyle.scale ?? 1);
+  const visibility = section.visible ? ((sectionStyle.visibility as string | undefined) ?? 'visible') : 'hidden';
 
   return {
-    marginTop: (sectionStyle?.spacingTop ?? 0) || undefined,
-    marginBottom: (sectionStyle?.spacingBottom ?? 0) || undefined,
+    width: (sectionStyle.width as string | number | undefined) ?? undefined,
+    height: (sectionStyle.height as string | number | undefined) ?? undefined,
+    minWidth: (sectionStyle.minWidth as string | number | undefined) ?? undefined,
+    minHeight: (sectionStyle.minHeight as string | number | undefined) ?? undefined,
+    maxWidth: (sectionStyle.maxWidth as string | number | undefined) ?? undefined,
+    maxHeight: (sectionStyle.maxHeight as string | number | undefined) ?? undefined,
+    padding: (sectionStyle.padding as string | number | undefined) ?? undefined,
+    margin: (sectionStyle.margin as string | number | undefined) ?? undefined,
+    marginTop: (sectionStyle.spacingTop as number | undefined) ?? undefined,
+    marginBottom: (sectionStyle.spacingBottom as number | undefined) ?? undefined,
+    borderWidth: borderWidth || undefined,
+    borderStyle: borderWidth ? borderStyle : undefined,
+    borderColor: borderWidth ? borderColor : undefined,
+    borderRadius: (sectionStyle.borderRadius as number | string | undefined) ?? undefined,
+    background: (sectionStyle.background as string | undefined) ?? undefined,
+    opacity: Number(sectionStyle.opacity ?? 1),
+    transform: `rotate(${rotate}deg) scale(${scale})`,
+    transformOrigin: (sectionStyle.transformOrigin as string | undefined) ?? 'center',
+    position: (positioning as React.CSSProperties['position']) ?? 'relative',
+    left: (sectionStyle.left as number | string | undefined) ?? undefined,
+    top: (sectionStyle.top as number | string | undefined) ?? undefined,
+    right: (sectionStyle.right as number | string | undefined) ?? undefined,
+    bottom: (sectionStyle.bottom as number | string | undefined) ?? undefined,
+    zIndex: (sectionStyle.zIndex as number | undefined) ?? undefined,
+    visibility: visibility as React.CSSProperties['visibility'],
+    display: (sectionStyle.display as React.CSSProperties['display']) ?? undefined,
+    alignSelf: (sectionStyle.alignSelf as React.CSSProperties['alignSelf']) ?? undefined,
     cursor: isInteractive ? 'pointer' : undefined,
     outline: isSelected ? '2px solid #6366f1' : undefined,
     outlineOffset: isSelected ? 2 : undefined,
-    borderRadius: isSelected ? 2 : undefined,
+    boxSizing: 'border-box',
     transition: isInteractive ? 'outline 0.1s' : undefined,
   };
 }

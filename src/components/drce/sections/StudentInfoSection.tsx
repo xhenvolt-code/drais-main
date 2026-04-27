@@ -20,8 +20,20 @@ interface Props {
   ctx: DRCEDataContext;
 }
 
-// ── Inline SVG barcode (no API required) ─────────────────────────────────────
-function InlineBarcode({ value, width = 36, height = 52 }: { value: string | null | undefined; width?: number; height?: number }) {
+// ── Inline SVG barcode (tight bounding box, print-safe) ──────────────────────
+function InlineBarcode({
+  value,
+  width = 36,
+  height = 52,
+  labelSpacing = 1,
+  labelFontSize = 7,
+}: {
+  value: string | null | undefined;
+  width?: number;
+  height?: number;
+  labelSpacing?: number;
+  labelFontSize?: number;
+}) {
   const pattern = [3, 1, 2, 1, 3, 1, 2, 2, 1, 2];
   const bars: React.ReactNode[] = [];
   let x = 0;
@@ -31,23 +43,34 @@ function InlineBarcode({ value, width = 36, height = 52 }: { value: string | nul
   for (let i = 0; i < Math.min(safeValue.length, 18); i++) {
     const code = safeValue.charCodeAt(i) % 10;
     const w = pattern[code];
-    bars.push(<rect key={i} x={x} y={0} width={w} height={50} fill="#000" />);
+    bars.push(<rect key={i} x={x} y={0} width={w} height={height} fill="#000" />);
     x += w + 1.5;
     // thin white gap bar every few chars for readability
-    if (i % 3 === 2) { bars.push(<rect key={`g${i}`} x={x} y={0} width={1} height={50} fill="#fff" />); x += 1; }
+    if (i % 3 === 2) { bars.push(<rect key={`g${i}`} x={x} y={0} width={1} height={height} fill="#fff" />); x += 1; }
   }
   const totalW = Math.max(x, 36);
+  const labelText = value || '';
+  const labelY = height + labelSpacing + labelFontSize;
+  const totalHeight = height + labelSpacing + labelFontSize + 1;
   return (
     <svg
       width={width}
-      height={height}
-      viewBox={`0 0 ${totalW} 50`}
-      preserveAspectRatio="none"
+      height={totalHeight}
+      viewBox={`0 0 ${totalW} ${totalHeight}`}
+      preserveAspectRatio="xMidYMin meet"
       style={{ display: 'block', margin: 'auto' }}
-      aria-label={`Barcode ${value}`}
+      aria-label={`Barcode ${labelText}`}
     >
-      <rect x={0} y={0} width={totalW} height={50} fill="#fff" />
       {bars}
+      <text
+        x={totalW / 2}
+        y={labelY}
+        textAnchor="middle"
+        fontSize={labelFontSize}
+        fill="#444"
+      >
+        {labelText}
+      </text>
     </svg>
   );
 }
@@ -70,6 +93,8 @@ export function StudentInfoSection({ section, ctx }: Props) {
   const barcodeRotation = style.barcodeRotation ?? 0;
   const barcodeWidth    = style.barcodeWidth    ?? 36;
   const barcodeHeight   = style.barcodeHeight   ?? 52;
+  const barcodeLabelSpacing = style.barcodeLabelSpacing ?? 1;
+  const barcodeLabelFontSize = style.barcodeLabelFontSize ?? 7;
   // Cell width adjusts to barcode width with some padding
   const barcodeCellWidth = barcodeWidth + 10;
 
@@ -117,10 +142,13 @@ export function StudentInfoSection({ section, ctx }: Props) {
                    transform: `rotate(${barcodeRotation}deg)`,
                    transformOrigin: 'center center',
                  }}>
-                   <InlineBarcode value={student.admissionNo} width={barcodeWidth} height={barcodeHeight} />
-                   <span style={{ fontSize: 7, display: 'block', marginTop: 1, wordBreak: 'break-all', color: '#444', textAlign: 'center' }}>
-                     {student.admissionNo || ''}
-                   </span>
+                   <InlineBarcode
+                     value={student.admissionNo}
+                     width={barcodeWidth}
+                     height={barcodeHeight}
+                     labelSpacing={barcodeLabelSpacing}
+                     labelFontSize={barcodeLabelFontSize}
+                   />
                  </div>
               </td>
             )}

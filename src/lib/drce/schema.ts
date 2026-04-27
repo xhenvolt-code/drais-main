@@ -259,6 +259,22 @@ export interface DRCERibbonStyle {
   fontSize: number;
   padding: string;
   textAlign: 'left' | 'center' | 'right';
+  width?: number;
+  height?: number;
+  chevronDepth?: number;
+  tailDepth?: number;
+  tailAngle?: number;
+  strokeWidth?: number;
+  strokeColor?: string;
+  textOffsetY?: number;
+  cornerRadius?: number;
+  shadowEnabled?: boolean;
+  shadowColor?: string;
+  shadowBlur?: number;
+  layerCount?: number;
+  layerOffset?: number;
+  svgScale?: number;
+  rotation?: number;
 }
 
 export interface DRCEStudentInfoStyle {
@@ -282,6 +298,10 @@ export interface DRCEStudentInfoStyle {
   barcodeWidth?: number;
   /** Barcode bar height in px (default 52) */
   barcodeHeight?: number;
+  /** Spacing between barcode bars and label text in px */
+  barcodeLabelSpacing?: number;
+  /** Font size of barcode label in px */
+  barcodeLabelFontSize?: number;
 }
 
 export interface DRCEResultsTableStyle {
@@ -529,6 +549,7 @@ export interface DRCEMetaContext {
   schoolName: string;
   schoolAddress: string;
   schoolContact: string;
+  schoolEmail: string;
   centerNo: string;
   registrationNo: string;
   arabicName: string | null;

@@ -607,6 +607,28 @@ function RibbonPanel({ section, onMutate }: { section: DRCESection & { type: 'ri
       </PanelSection>
       <PanelSection title="Dimensions">
         <Row label="Padding"><TextInput value={style.padding} onChange={v => set('padding', v)} placeholder="4px 12px" /></Row>
+        <Row label="Width (vb)"><NumberInput value={style.width} onChange={v => set('width', v)} min={120} max={1200} /></Row>
+        <Row label="Height (px)"><NumberInput value={style.height} onChange={v => set('height', v)} min={18} max={200} /></Row>
+        <Row label="Chevron depth"><NumberInput value={style.chevronDepth} onChange={v => set('chevronDepth', v)} min={0} max={120} /></Row>
+        <Row label="Tail depth"><NumberInput value={style.tailDepth} onChange={v => set('tailDepth', v)} min={0} max={120} /></Row>
+        <Row label="Tail angle"><NumberInput value={style.tailAngle} onChange={v => set('tailAngle', v)} min={10} max={80} /></Row>
+        <Row label="Corner radius"><NumberInput value={style.cornerRadius} onChange={v => set('cornerRadius', v)} min={0} max={40} /></Row>
+      </PanelSection>
+      <PanelSection title="SVG / Layering">
+        <Row label="Stroke colour"><ColorInput value={style.strokeColor ?? '#000000'} onChange={v => set('strokeColor', v)} /></Row>
+        <Row label="Stroke width"><NumberInput value={style.strokeWidth} onChange={v => set('strokeWidth', v)} min={0} max={10} step={0.2} /></Row>
+        <Row label="Text Y offset"><NumberInput value={style.textOffsetY} onChange={v => set('textOffsetY', v)} min={-40} max={40} /></Row>
+        <Row label="Scale"><NumberInput value={style.svgScale} onChange={v => set('svgScale', v)} min={0.5} max={2} step={0.05} /></Row>
+        <Row label="Rotation"><NumberInput value={style.rotation} onChange={v => set('rotation', v)} min={-180} max={180} step={1} /></Row>
+        <Row label="Layers"><NumberInput value={style.layerCount} onChange={v => set('layerCount', v)} min={1} max={6} /></Row>
+        <Row label="Layer offset"><NumberInput value={style.layerOffset} onChange={v => set('layerOffset', v)} min={0} max={20} /></Row>
+      </PanelSection>
+      <PanelSection title="Shadow" defaultOpen={false}>
+        <Row label="Enable">
+          <input type="checkbox" checked={style.shadowEnabled ?? false} onChange={e => set('shadowEnabled', e.target.checked)} className="w-4 h-4" />
+        </Row>
+        <Row label="Shadow color"><ColorInput value={style.shadowColor ?? '#000000'} onChange={v => set('shadowColor', v)} /></Row>
+        <Row label="Shadow blur"><NumberInput value={style.shadowBlur} onChange={v => set('shadowBlur', v)} min={0} max={24} /></Row>
       </PanelSection>
       <SpacingSection section={section} onMutate={onMutate} />
       <DeleteSectionBtn section={section} onMutate={onMutate} />
@@ -667,6 +689,12 @@ function StudentInfoPanel({ section, onMutate }: { section: DRCEStudentInfoSecti
         </Row>
         <Row label="Height (px)">
           <NumberInput value={style.barcodeHeight ?? 52} onChange={v => set('barcodeHeight', v)} min={20} max={160} />
+        </Row>
+        <Row label="Label spacing">
+          <NumberInput value={style.barcodeLabelSpacing ?? 1} onChange={v => set('barcodeLabelSpacing', v)} min={0} max={20} />
+        </Row>
+        <Row label="Label size">
+          <NumberInput value={style.barcodeLabelFontSize ?? 7} onChange={v => set('barcodeLabelFontSize', v)} min={5} max={20} />
         </Row>
         <Row label="Show photo">
           <input type="checkbox" checked={style.showPhoto !== false}

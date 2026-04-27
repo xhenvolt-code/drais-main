@@ -57,6 +57,7 @@ const DEMO_DATA_CTX: DRCEDataContext = {
     schoolName:      '',
     schoolAddress:   '',
     schoolContact:   '',
+    schoolEmail:     '',
     centerNo:        '',
     registrationNo:  '',
     arabicName:      null,
