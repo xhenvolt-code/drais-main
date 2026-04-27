@@ -5,7 +5,7 @@ import { getSessionSchoolId } from '@/lib/auth';
 // Helper function to validate input
 const validateInput = (data) => {
   const normalizeNullable = (value) => (value === '' || value === undefined ? null : value);
-  const { class_id, subject_id, teacher_id, stream_id, term_id } = data;
+  const { class_id, subject_id, teacher_id } = data;
   if (!class_id || !subject_id) {
     throw new Error('Class ID and Subject ID are required.');
   }
@@ -13,8 +13,6 @@ const validateInput = (data) => {
     class_id,
     subject_id,
     teacher_id: normalizeNullable(teacher_id),
-    stream_id: normalizeNullable(stream_id),
-    term_id: normalizeNullable(term_id),
   };
 };
 
@@ -82,31 +80,24 @@ export async function GET(req) {
         cs.class_id,
         cs.subject_id,
         cs.teacher_id,
-        cs.stream_id,
-        cs.term_id,
         c.name AS class_name,
         sub.name AS subject_name,
         COALESCE(NULLIF(TRIM(CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, ''))), ''), 'Unassigned') AS teacher_name,
         COALESCE(
-          NULLIF(TRIM(staff.initials), ''),
           NULLIF(CONCAT(COALESCE(LEFT(p.first_name, 1), ''), COALESCE(LEFT(p.last_name, 1), '')), '')
         ) AS teacher_initials,
-        s.name AS stream,
-        t.name AS term
+        NULL AS stream,
+        NULL AS term
       FROM class_subjects cs
       JOIN classes c ON cs.class_id = c.id
       JOIN subjects sub ON cs.subject_id = sub.id
       LEFT JOIN staff ON cs.teacher_id = staff.id
       LEFT JOIN people p ON staff.person_id = p.id
-      LEFT JOIN streams s ON cs.stream_id = s.id
-      LEFT JOIN terms t ON cs.term_id = t.id
       WHERE c.school_id = ? AND sub.school_id = ?
       ${classId ? 'AND cs.class_id = ?' : ''}
-      ${streamId ? 'AND cs.stream_id = ?' : ''}
-      ${termId ? 'AND cs.term_id = ?' : ''}
       ORDER BY c.name ASC, sub.name ASC
     `;
-    const params = [session.schoolId, session.schoolId, classId, streamId, termId].filter(v => v !== null && v !== undefined && v !== '');
+    const params = [session.schoolId, session.schoolId, classId].filter(v => v !== null && v !== undefined && v !== '');
     const [rows] = await connection.execute(query, params);
 
     return NextResponse.json(rows);
@@ -128,7 +119,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { class_id, subject_id, teacher_id, stream_id, term_id } = validateInput(body);
+    const { class_id, subject_id, teacher_id } = validateInput(body);
 
     connection = await getConnection();
     await validateOwnership(connection, session.schoolId, { class_id, subject_id, teacher_id });
@@ -136,16 +127,16 @@ export async function POST(req) {
       `SELECT cs.id
        FROM class_subjects cs
        JOIN classes c ON cs.class_id = c.id
-       WHERE cs.class_id = ? AND cs.subject_id = ? AND cs.stream_id <=> ? AND cs.term_id <=> ? AND c.school_id = ?`,
-      [class_id, subject_id, stream_id, term_id, session.schoolId]
+       WHERE cs.class_id = ? AND cs.subject_id = ? AND c.school_id = ?`,
+      [class_id, subject_id, session.schoolId]
     );
     if (existing.length > 0) {
       throw new Error('This assignment already exists.');
     }
 
     await connection.execute(
-      `INSERT INTO class_subjects (class_id, subject_id, teacher_id, stream_id, term_id) VALUES (?, ?, ?, ?, ?)`,
-      [class_id, subject_id, teacher_id, stream_id, term_id]
+      `INSERT INTO class_subjects (class_id, subject_id, teacher_id) VALUES (?, ?, ?)`,
+      [class_id, subject_id, teacher_id]
     );
 
     return NextResponse.json({ success: true, message: 'Teacher assigned successfully.' });
@@ -172,14 +163,14 @@ export async function PUT(req) {
 
     connection = await getConnection();
     await ensureAssignmentBelongsToSchool(connection, session.schoolId, id);
-    const { class_id, subject_id, teacher_id, stream_id, term_id } = validateInput(body);
+    const { class_id, subject_id, teacher_id } = validateInput(body);
     await validateOwnership(connection, session.schoolId, { class_id, subject_id, teacher_id });
 
     await connection.execute(
       `UPDATE class_subjects
-       SET class_id = ?, subject_id = ?, teacher_id = ?, stream_id = ?, term_id = ?
+       SET class_id = ?, subject_id = ?, teacher_id = ?
        WHERE id = ?`,
-      [class_id, subject_id, teacher_id, stream_id, term_id, id]
+      [class_id, subject_id, teacher_id, id]
     );
 
     return NextResponse.json({ success: true, message: 'Assignment updated successfully.' });

@@ -83,11 +83,11 @@ export async function GET(req: NextRequest) {
     const academicType = searchParams.get('academic_type');
     const search = searchParams.get('search') || '';
     const rawPage = Number.parseInt(searchParams.get('page') || '1', 10);
-    const rawLimit = Number.parseInt(searchParams.get('limit') || '10', 10);
+    const rawLimit = Number.parseInt(searchParams.get('limit') || '100', 10);
     const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
     const limit = Number.isFinite(rawLimit) && rawLimit > 0
       ? Math.min(100, rawLimit)
-      : 10;
+      : 100;
     const offset = (page - 1) * limit;
 
     connection = await getConnection();
