@@ -90,8 +90,8 @@ export const GET = withErrorHandling(async function GET(req: NextRequest) {
                 p.email, p.phone, p.gender, p.photo_url, d.name,
                 m.first_name, m.last_name, u.id, u.status, u.last_login
        ORDER BY p.first_name, p.last_name
-       LIMIT ? OFFSET ?`,
-      [...values, limit, offset],
+       LIMIT ${limit} OFFSET ${offset}`,
+      values,
     ),
   ]);
 

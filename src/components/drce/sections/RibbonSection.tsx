@@ -90,7 +90,7 @@ function RibbonPrimitive({
         transformOrigin: 'center',
       }}
     >
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none">
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={`${height}px`} preserveAspectRatio="none" style={{ display: 'block' }}>
         {shadowEnabled && (
           <defs>
             <filter id={`ribbon-shadow-${section.id}`} x="-20%" y="-20%" width="140%" height="140%">
@@ -133,6 +133,9 @@ export function RibbonSection({ section, theme, ctx }: Props) {
   const { style, content } = section;
   const text = resolveToken(content.text, ctx);
 
+  // Default shape to 'arrow-down' if missing or invalid
+  const shape = content.shape ?? 'arrow-down';
+
   const cssStyle: React.CSSProperties = {
     backgroundColor: style.background ?? theme.accentColor,
     color: style.color ?? '#000',
@@ -142,7 +145,7 @@ export function RibbonSection({ section, theme, ctx }: Props) {
     textAlign: style.textAlign ?? 'center',
   };
 
-  if (content.shape === 'arrow-down' || content.shape === 'chevron') {
+  if (shape === 'arrow-down' || shape === 'chevron') {
     return <RibbonPrimitive text={text} section={section} />;
   }
   return <div style={cssStyle}>{text}</div>;

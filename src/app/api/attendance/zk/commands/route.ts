@@ -53,8 +53,8 @@ export async function GET(req: NextRequest) {
        LEFT JOIN devices d ON c.device_sn = d.sn
        WHERE ${where}
        ORDER BY c.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset],
+       LIMIT ${limit} OFFSET ${offset}`,
+      params,
     );
 
     return NextResponse.json({

@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
       WHERE cr.school_id = ?
         AND cr.academic_year_id = ?
         AND cr.term_id = ?
+        AND s.deleted_at IS NULL
     `;
     const params: any[] = [schoolId, ayId, tId];
 

@@ -39,11 +39,11 @@ export async function GET(req: NextRequest) {
 
     // ── System Errors ────────────────────────────────────────
     if (section === "all" || section === "errors") {
-      const errParams: unknown[] = [limit, offset];
+      const errParams: unknown[] = [];
       let errWhere = "";
       if (filterSchool) {
         errWhere = "WHERE school_id = ?";
-        errParams.unshift(filterSchool);
+        errParams.push(filterSchool);
       }
 
       const [errors, errCount] = await Promise.all([
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
            FROM system_errors
            ${errWhere}
            ORDER BY created_at DESC
-           LIMIT ? OFFSET ?`,
+           LIMIT ${limit} OFFSET ${offset}`,
           errParams
         ),
         query(
@@ -72,11 +72,11 @@ export async function GET(req: NextRequest) {
 
     // ── Audit Logs ───────────────────────────────────────────
     if (section === "all" || section === "audit") {
-      const auditParams: unknown[] = [limit, offset];
+      const auditParams: unknown[] = [];
       let auditWhere = "";
       if (filterSchool) {
         auditWhere = "WHERE school_id = ?";
-        auditParams.unshift(filterSchool);
+        auditParams.push(filterSchool);
       }
 
       const [audits, auditCount] = await Promise.all([
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
            FROM audit_logs
            ${auditWhere}
            ORDER BY created_at DESC
-           LIMIT ? OFFSET ?`,
+           LIMIT ${limit} OFFSET ${offset}`,
           auditParams
         ),
         query(
@@ -105,11 +105,11 @@ export async function GET(req: NextRequest) {
 
     // ── Migration Runs ───────────────────────────────────────
     if (section === "all" || section === "migrations") {
-      const migParams: unknown[] = [limit, offset];
+      const migParams: unknown[] = [];
       let migWhere = "";
       if (filterSchool) {
         migWhere = "WHERE school_id = ?";
-        migParams.unshift(filterSchool);
+        migParams.push(filterSchool);
       }
 
       const [migrations, migCount] = await Promise.all([
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
            FROM migration_runs
            ${migWhere}
            ORDER BY started_at DESC
-           LIMIT ? OFFSET ?`,
+           LIMIT ${limit} OFFSET ${offset}`,
           migParams
         ),
         query(

@@ -63,8 +63,8 @@ export async function GET(req: NextRequest) {
        LEFT JOIN devices d ON sl.device_sn = d.sn
        ${where}
        ORDER BY sl.id DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset],
+       LIMIT ${limit} OFFSET ${offset}`,
+      params,
     );
 
     // Device health: check which devices haven't heartbeat in 2 min

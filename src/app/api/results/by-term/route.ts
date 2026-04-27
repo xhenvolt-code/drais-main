@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const academicYearId = req.nextUrl.searchParams.get('academic_year_id');
     const classId = req.nextUrl.searchParams.get('class_id');
 
-    let where = 'WHERE s.school_id = ?';
+    let where = 'WHERE s.school_id = ? AND s.deleted_at IS NULL';
     const params: any[] = [schoolId];
 
     if (studentId) {

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const connection = await getConnection();
 
   try {
-    let where = 'WHERE s.school_id = ?';
+    let where = 'WHERE s.school_id = ? AND s.deleted_at IS NULL';
     const params: any[] = [schoolId];
 
     if (classId) {

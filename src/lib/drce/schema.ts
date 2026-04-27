@@ -627,6 +627,15 @@ export function parseDRCERow(row: DVCFDocumentRow): DRCEDocument {
     if (!Array.isArray(section.items))   section.items   = [];
     if (!Array.isArray(section.columns)) section.columns = [];
     if (!Array.isArray(section.rows))    section.rows    = [];
+    
+    // Ensure ribbon sections have valid shape property
+    if (section.type === 'ribbon' && section.content) {
+      const content = section.content as Record<string, unknown>;
+      if (!content.shape || !['arrow-down', 'chevron', 'flat'].includes(content.shape as string)) {
+        content.shape = 'arrow-down'; // Default shape for backwards compatibility
+      }
+    }
+    
     return section as unknown as DRCESection;
   });
 

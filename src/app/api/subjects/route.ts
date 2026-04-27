@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
       sql += ` LIMIT ${limit} OFFSET ${offset}`;
     }
 
-    const [rows] = await connection.query(sql, params);
+    const [rows] = await connection.execute(sql, params);
     return NextResponse.json({
       data: rows,
       total,

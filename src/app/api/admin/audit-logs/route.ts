@@ -56,8 +56,8 @@ export const GET = withErrorHandling(async function GET(req: NextRequest) {
        LEFT JOIN users u ON al.user_id = u.id
        WHERE ${where}
        ORDER BY al.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [...values, limit, offset],
+       LIMIT ${limit} OFFSET ${offset}`,
+      values,
     ),
   ]);
 
