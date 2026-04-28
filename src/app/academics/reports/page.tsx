@@ -360,19 +360,12 @@ const ReportsPage = () => {
         : termsData)
     : [];
 
+  // Fetch all data once on component mount — NO FILTERING, get everything
   useEffect(() => {
     setLoading(true);
-    // Build query params for report fetch
-    const reportParams = new URLSearchParams();
-    if (filters.academicYearId) reportParams.set('academic_year_id', filters.academicYearId);
-    if (filters.term) {
-      const termId = getTermId(filters.term);
-      if (termId) reportParams.set('term_id', termId);
-    }
-    const reportUrl = `/api/reports/list${reportParams.toString() ? '?' + reportParams.toString() : ''}`;
-    // Use new DB (Next.js API)
+    // Fetch ALL results without server-side filtering — client-side filtering via useMemo
     Promise.all([
-      fetch(reportUrl)
+      fetch('/api/reports/list')
         .then(async r => {
           const data: ApiResponse = await r.json().catch(() => ({}));
           return data;
@@ -418,7 +411,7 @@ const ReportsPage = () => {
         setAllResults([]);
       })
       .finally(() => setLoading(false));
-  }, [filters.academicYearId, filters.term, termsData]);
+  }, []);
 
   // Load editable term value from localStorage on mount
   useEffect(() => {
@@ -521,6 +514,17 @@ const ReportsPage = () => {
         // Ensure student has valid results
         if (s.results.length === 0) return false;
         
+        // Academic year filter — CLIENT-SIDE filtering (was previously server-side)
+        if (filters.academicYearId) {
+          const hasAYData = s.results.some((r: Result) => r && r.academic_year_id);
+          if (hasAYData) {
+            const matchesAY = s.results.some((r: Result) =>
+              r && String(r.academic_year_id || '') === filters.academicYearId
+            );
+            if (!matchesAY) return false;
+          }
+        }
+        
         // Term filter - only apply if term data exists
         if (filters.term) {
           const hasTermData = s.results.some((r: Result) => r && (r.term || r.term_name));
@@ -578,6 +582,11 @@ const ReportsPage = () => {
 
   // Helper: check if a single result row matches current filters - IMPROVED
   const matchesFilters = (r: Result): boolean => {
+    // Academic year filter
+    if (filters.academicYearId && r.academic_year_id) {
+      if (String(r.academic_year_id) !== filters.academicYearId) return false;
+    }
+    
     if (filters.resultType) {
       const rt = String(r.result_type_name || r.results_type || '').toLowerCase();
       const filterType = filters.resultType.toLowerCase();
