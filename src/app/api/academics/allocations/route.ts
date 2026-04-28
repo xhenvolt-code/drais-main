@@ -119,10 +119,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // Insert new allocation (no school_id column — enforced via class → classes join)
     const [result] = await connection.execute(
-      `INSERT INTO class_subjects (school_id, class_id, subject_id, teacher_id, custom_initials)
-       VALUES (?, ?, ?, ?, ?)`,
-      [session.schoolId, class_id, subject_id, teacher_id, custom_initials]
+      `INSERT INTO class_subjects (class_id, subject_id, teacher_id, custom_initials)
+       VALUES (?, ?, ?, ?)`,
+      [class_id, subject_id, teacher_id, custom_initials]
     );
 
     const newId = (result as any).insertId;

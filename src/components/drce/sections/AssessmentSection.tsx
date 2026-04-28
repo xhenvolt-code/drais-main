@@ -30,6 +30,7 @@ export function AssessmentSection({ section, theme, ctx }: Props) {
   const itemMinWidth = Number(style.itemMinWidth ?? 160);
   const tableLayout = String(style.tableLayout ?? 'fixed');
   const groupHeader = String(style.assessmentLabel ?? 'Grade Assessment');
+  const positionLabel = String(style.positionLabel ?? 'Position');
 
   const visibleFields = [...(section.fields || [])]
     .filter(f => f.visible)
@@ -111,7 +112,7 @@ export function AssessmentSection({ section, theme, ctx }: Props) {
         {/* Header row: Position | Grade Assessment */}
         <tr>
           {posFields.length > 0 && (
-            <td style={headerCell} colSpan={posFields.length}>Position</td>
+            <td style={headerCell} colSpan={posFields.length}>{positionLabel}</td>
           )}
           {assFields.length > 0 && (
             <td style={headerCell} colSpan={assFields.length}>

@@ -55,11 +55,11 @@ export async function POST(req: Request) {
           );
           results.push({ action: 'updated', id: existing.id, class_id, subject_id });
         } else {
-          // Insert new
+          // Insert new (no school_id column — class already belongs to school via validation)
           const [result] = await connection.execute(
-            `INSERT INTO class_subjects (school_id, class_id, subject_id, teacher_id, custom_initials)
-             VALUES (?, ?, ?, ?, ?)`,
-            [session.schoolId, class_id, subject_id, teacher_id, custom_initials]
+            `INSERT INTO class_subjects (class_id, subject_id, teacher_id, custom_initials)
+             VALUES (?, ?, ?, ?)`,
+            [class_id, subject_id, teacher_id, custom_initials]
           );
           results.push({ action: 'created', id: (result as any).insertId, class_id, subject_id });
         }

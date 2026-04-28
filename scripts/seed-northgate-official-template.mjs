@@ -113,11 +113,15 @@ const document = {
         valueColor: '#B22222', valueFontWeight: 'bold', valueFontSize: 14,
       },
     },
-    // 4 — Ribbon: Principal Subjects
+    // 4 — Ribbon: Principal Subjects (7-sided with triangle arrow at bottom)
     {
       id: 'ng-ribbon-principal', type: 'ribbon', visible: true, order: 3,
       content: { text: 'Principal Subjects Comprising the General Assessment', shape: 'arrow-down' },
-      style: { background: '#999999', color: '#000000', fontWeight: 'bold', fontSize: 12, padding: '4px 0', textAlign: 'center' },
+      style: { 
+        background: '#999999', color: '#000000', fontWeight: 'bold', fontSize: 12, 
+        padding: '4px 0', textAlign: 'center',
+        width: 600, height: 46, tailDepth: 14, tailAngle: 45, cornerRadius: 0
+      },
     },
     // 5 — Principal results table
     {
@@ -125,11 +129,15 @@ const document = {
       columns: makeColumns('p'),
       style: TABLE_STYLE,
     },
-    // 6 — Ribbon: Other Subjects
+    // 6 — Ribbon: Other Subjects (7-sided with triangle arrow at bottom)
     {
       id: 'ng-ribbon-other', type: 'ribbon', visible: true, order: 5,
       content: { text: 'Other subjects (Not part of Assessment)', shape: 'arrow-down' },
-      style: { background: '#999999', color: '#000000', fontWeight: 'bold', fontSize: 12, padding: '4px 0', textAlign: 'center' },
+      style: { 
+        background: '#999999', color: '#000000', fontWeight: 'bold', fontSize: 12, 
+        padding: '4px 0', textAlign: 'center',
+        width: 600, height: 46, tailDepth: 14, tailAngle: 45, cornerRadius: 0
+      },
     },
     // 7 — Other subjects table
     {

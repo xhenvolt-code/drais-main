@@ -109,6 +109,10 @@ function BoxPanel({ shape, onUpdate }: { shape: DRCERectShape | DRCEEllipseShape
       <Row label="Height">
         <NumberInput value={Math.round(shape.h)} min={10} onChange={v => onUpdate({ h: v } as Partial<DRCEShape>)} />
       </Row>
+      <Row label="Rotation">
+        <NumberInput value={Math.round(shape.rotation)} min={0} max={360} onChange={v => onUpdate({ rotation: v } as Partial<DRCEShape>)} />
+        <span className="text-xs text-gray-400 flex-shrink-0">°</span>
+      </Row>
     </>
   );
 }
@@ -149,6 +153,10 @@ function LinePanel({ shape, onUpdate }: { shape: DRCELineShape; onUpdate: (u: Pa
         <input type="checkbox" checked={shape.dashed}
           onChange={e => onUpdate({ dashed: e.target.checked } as Partial<DRCEShape>)} />
         <span className="text-xs text-gray-500">Dashed line</span>
+      </Row>
+      <Row label="Rotation">
+        <NumberInput value={Math.round(shape.rotation)} min={0} max={360} onChange={v => onUpdate({ rotation: v } as Partial<DRCEShape>)} />
+        <span className="text-xs text-gray-400 flex-shrink-0">°</span>
       </Row>
     </>
   );
@@ -196,6 +204,10 @@ function TextPanel({ shape, onUpdate }: { shape: DRCETextShape; onUpdate: (u: Pa
       </Row>
       <Row label="Width">
         <NumberInput value={Math.round(shape.w)} min={20} onChange={v => onUpdate({ w: v } as Partial<DRCEShape>)} />
+      </Row>
+      <Row label="Rotation">
+        <NumberInput value={Math.round(shape.rotation)} min={0} max={360} onChange={v => onUpdate({ rotation: v } as Partial<DRCEShape>)} />
+        <span className="text-xs text-gray-400 flex-shrink-0">°</span>
       </Row>
     </>
   );
