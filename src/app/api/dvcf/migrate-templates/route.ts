@@ -160,7 +160,7 @@ const MODERN_TEMPLATE_DRCE: DRCEDocument = {
         { id: 'col-total',    header: 'TOTAL',    binding: 'result.total',        width: '10%', visible: true, order: 3, align: 'center' },
         { id: 'col-grade',    header: 'GRADE',    binding: 'result.grade',        width: '8%',  visible: true, order: 4, align: 'center' },
         { id: 'col-comment',  header: 'COMMENT',  binding: 'result.comment',      width: '25%', visible: true, order: 5, align: 'left' },
-        { id: 'col-initials', header: 'INITIALS', binding: 'result.initials',     width: '12%', visible: true, order: 6, align: 'center' },
+        { id: 'col-initials', header: 'INITIALS', binding: 'result.initials',     width: '12%', visible: true, order: 6, align: 'center', contentEditable: true },
       ],
       style: {
         headerBackground: '#f0f8ff',
@@ -351,7 +351,7 @@ const MODERN_CLEAN_DRCE: DRCEDocument = {
         { id: 'col-total',    header: 'Total',    binding: 'result.total',        width: '8%',  visible: true, order: 3, align: 'center' },
         { id: 'col-grade',    header: 'Grade',    binding: 'result.grade',        width: '8%',  visible: true, order: 4, align: 'center', style: { color: '#0d9488', fontWeight: 'bold' } },
         { id: 'col-comment',  header: 'Comment',  binding: 'result.comment',      width: '30%', visible: true, order: 5, align: 'left', style: { fontStyle: 'italic', color: '#065f46' } },
-        { id: 'col-initials', header: 'Initials', binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center' },
+        { id: 'col-initials', header: 'Initials', binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center', contentEditable: true },
       ],
       style: {
         headerBackground: '#dcfce7',
@@ -507,7 +507,7 @@ const NORTHGATE_CLASSIC_DRCE: DRCEDocument = {
         { id: 'col-total',    header: 'Total',    binding: 'result.total',        width: '10%', visible: true, order: 3, align: 'center' },
         { id: 'col-grade',    header: 'Grade',    binding: 'result.grade',        width: '8%',  visible: true, order: 4, align: 'center' },
         { id: 'col-comment',  header: 'Comment',  binding: 'result.comment',      width: '26%', visible: true, order: 5, align: 'left' },
-        { id: 'col-initials', header: 'Init',     binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center' },
+        { id: 'col-initials', header: 'Init',     binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center', contentEditable: true },
       ],
       style: {
         headerBackground: '#e5e5e5',
@@ -641,7 +641,7 @@ const DUAL_CURRICULUM_DRCE: DRCEDocument = {
         { id: 'col-total',    header: 'Total',    binding: 'result.total',        width: '8%',  visible: true, order: 3, align: 'center' },
         { id: 'col-grade',    header: 'Grade',    binding: 'result.grade',        width: '7%',  visible: true, order: 4, align: 'center' },
         { id: 'col-comment',  header: 'Comment',  binding: 'result.comment',      width: '35%', visible: true, order: 5, align: 'left' },
-        { id: 'col-initials', header: 'Init',     binding: 'result.initials',     width: '6%',  visible: true, order: 6, align: 'center' },
+        { id: 'col-initials', header: 'Init',     binding: 'result.initials',     width: '6%',  visible: true, order: 6, align: 'center', contentEditable: true },
       ],
       style: {
         headerBackground: '#dce7d1',
@@ -777,7 +777,7 @@ const DEFAULT_CLONE_DRCE: DRCEDocument = {
         { id: 'col-total',    header: 'Total',    binding: 'result.total',        width: '8%',  visible: true, order: 3, align: 'center' },
         { id: 'col-grade',    header: 'Grade',    binding: 'result.grade',        width: '8%',  visible: true, order: 4, align: 'center' },
         { id: 'col-comment',  header: 'Comment',  binding: 'result.comment',      width: '30%', visible: true, order: 5, align: 'left' },
-        { id: 'col-initials', header: 'Initials', binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center' },
+        { id: 'col-initials', header: 'Initials', binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center', contentEditable: true },
       ],
       style: {
         headerBackground: '#dcfce7',
@@ -897,7 +897,7 @@ const ARABIC_CLONE_DRCE: DRCEDocument = {
         { id: 'col-total',    header: 'المجموع',    binding: 'result.total',        width: '8%',  visible: true, order: 3, align: 'center' },
         { id: 'col-grade',    header: 'التقدير',    binding: 'result.grade',        width: '8%',  visible: true, order: 4, align: 'center' },
         { id: 'col-comment',  header: 'التعليق',    binding: 'result.comment',      width: '30%', visible: true, order: 5, align: 'right' },
-        { id: 'col-initials', header: 'التوقيع',    binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center' },
+        { id: 'col-initials', header: 'التوقيع',    binding: 'result.initials',     width: '8%',  visible: true, order: 6, align: 'center', contentEditable: true },
       ],
       style: {
         headerBackground: '#f5e5e9',

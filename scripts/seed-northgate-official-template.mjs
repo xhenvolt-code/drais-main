@@ -39,7 +39,7 @@ function makeColumns(prefix) {
     { id: `${prefix}-col-total`,    header: 'Total',    binding: 'result.total',        width: '10%', visible: true, order: 2, align: 'center' },
     { id: `${prefix}-col-grade`,    header: 'Grade',    binding: 'result.grade',        width: '8%',  visible: true, order: 3, align: 'center', style: { color: '#B22222' } },
     { id: `${prefix}-col-comment`,  header: 'Comment',  binding: 'result.comment',      width: '37%', visible: true, order: 4, align: 'left',   style: { fontStyle: 'italic', color: '#0000FF', fontSize: 11 } },
-    { id: `${prefix}-col-initials`, header: 'Initials', binding: 'result.initials',     width: '10%', visible: true, order: 5, align: 'center', style: { color: '#0000FF', fontWeight: 'bold' } },
+    { id: `${prefix}-col-initials`, header: 'Initials', binding: 'result.initials',     width: '10%', visible: true, order: 5, align: 'center', style: { color: '#0000FF', fontWeight: 'bold' }, contentEditable: true },
   ];
 }
 

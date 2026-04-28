@@ -143,6 +143,7 @@ export interface DRCEColumn {
   order: number;
   align: 'left' | 'center' | 'right';
   style?: DRCEColumnStyle;
+  contentEditable?: boolean;  // If true, cell can be edited inline (typically for initials)
 }
 
 // ─── Field (used by student_info and assessment sections) ────────────────────
