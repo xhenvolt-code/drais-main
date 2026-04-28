@@ -119,10 +119,65 @@ function ReportSkeleton() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   Subject Table Row
+   Subject Table Row with Editable Initials
    ═══════════════════════════════════════════════════════ */
 
-function SubjectTableRow({ row }: { row: SubjectRow }) {
+interface SubjectTableRowProps {
+  row: SubjectRow;
+  classId?: number;
+  subjectId?: number;
+  onInitialsChange?: (newInitials: string) => void;
+}
+
+function SubjectTableRow({ row, classId, subjectId, onInitialsChange }: SubjectTableRowProps) {
+  const [initials, setInitials] = React.useState(row.initials ?? '');
+  const [isSaving, setIsSaving] = React.useState(false);
+  const initialsRef = React.useRef<HTMLTableCellElement>(null);
+
+  const handleInitialsChange = async (e: React.FocusEvent<HTMLTableCellElement>) => {
+    const newInitials = e.currentTarget.textContent ?? '';
+    
+    // Trim and validate
+    const trimmedInitials = newInitials.trim().slice(0, 10);
+    setInitials(trimmedInitials);
+
+    // Only save if changed and we have classId/subjectId
+    if (trimmedInitials !== (row.initials ?? '') && classId && subjectId) {
+      setIsSaving(true);
+      try {
+        const res = await fetch('/api/teacher-initials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            classId,
+            subjectId,
+            initials: trimmedInitials || null,
+          }),
+        });
+
+        if (!res.ok) {
+          console.error('Failed to update initials:', await res.text());
+          // Revert on error
+          setInitials(row.initials ?? '');
+          if (initialsRef.current) {
+            initialsRef.current.textContent = row.initials ?? '';
+          }
+        } else {
+          onInitialsChange?.(trimmedInitials);
+        }
+      } catch (error) {
+        console.error('Error saving initials:', error);
+        // Revert on error
+        setInitials(row.initials ?? '');
+        if (initialsRef.current) {
+          initialsRef.current.textContent = row.initials ?? '';
+        }
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
   return (
     <tr>
       <td>{row.name}</td>
@@ -130,7 +185,21 @@ function SubjectTableRow({ row }: { row: SubjectRow }) {
       <td className="report-center">{row.total ?? ''}</td>
       <td className="report-center report-blue">{row.grade ?? ''}</td>
       <td className="report-blue">{row.comment ?? ''}</td>
-      <td className="report-center report-blue">{row.initials ?? ''}</td>
+      <td
+        ref={initialsRef}
+        className="report-center report-blue"
+        contentEditable={!isSaving}
+        onBlur={handleInitialsChange}
+        style={{
+          cursor: 'text',
+          backgroundColor: isSaving ? '#f0f0f0' : 'transparent',
+          opacity: isSaving ? 0.6 : 1,
+          outline: 'none',
+        }}
+        suppressContentEditableWarning
+      >
+        {initials}
+      </td>
     </tr>
   );
 }
@@ -427,7 +496,12 @@ export default function NorthgateReport({
           </thead>
           <tbody>
             {principalSubjects.map((subj) => (
-              <SubjectTableRow key={subj.name} row={subj} />
+              <SubjectTableRow
+                key={subj.name}
+                row={subj}
+                classId={subj.classId}
+                subjectId={subj.subjectId}
+              />
             ))}
           </tbody>
           <tfoot>
@@ -457,7 +531,12 @@ export default function NorthgateReport({
           </thead>
           <tbody>
             {otherSubjects.map((subj) => (
-              <SubjectTableRow key={subj.name} row={subj} />
+              <SubjectTableRow
+                key={subj.name}
+                row={subj}
+                classId={subj.classId}
+                subjectId={subj.subjectId}
+              />
             ))}
           </tbody>
         </table>

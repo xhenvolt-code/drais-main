@@ -15,6 +15,8 @@ export interface SubjectRow {
   grade: string | null;
   comment: string | null;
   initials: string | null;
+  classId?: number;
+  subjectId?: number;
 }
 
 export interface Assessment {
