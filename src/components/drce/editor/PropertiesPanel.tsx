@@ -1111,6 +1111,48 @@ function DividerPanel({ section, onMutate }: { section: DRCESection & { type: 'd
   );
 }
 
+// ─── Next Term Begins Panel ───────────────────────────────────────────────────
+
+function NextTermBeginsPanel({ section, onMutate }: { section: DRCESection & { type: 'next_term_begins' }; onMutate: (m: DRCEMutation) => void }) {
+  const set = (path: string, value: unknown) => onMutate({ type: 'SET_SECTION_STYLE', sectionId: section.id, path, value });
+  const setContent = (key: string, value: string) => onMutate({ type: 'SET_SECTION_CONTENT', sectionId: section.id, key, value });
+  const { style, content } = section;
+  return (
+    <div className="p-3 space-y-4">
+      <PanelSection title="Content">
+        <Row label="Text"><TextInput value={content.text} onChange={v => setContent('text', v)} placeholder="Next term begins" /></Row>
+        <Row label="Custom Date"><TextInput value={content.customDate || ''} onChange={v => setContent('customDate', v)} placeholder="e.g., May 10, 2026 (leave blank for auto-date)" /></Row>
+      </PanelSection>
+      <PanelSection title="Style">
+        <Row label="Background"><ColorInput value={style.background || '#e0f2fe'} onChange={v => set('background', v)} /></Row>
+        <Row label="Text Colour"><ColorInput value={style.color || '#0c4a6e'} onChange={v => set('color', v)} /></Row>
+        <Row label="Font Size"><NumberInput value={style.fontSize || 14} onChange={v => set('fontSize', v)} min={10} max={24} /></Row>
+        <Row label="Font Weight">
+          <SelectInput value={String(style.fontWeight || '600')} onChange={v => set('fontWeight', v)} options={[
+            { label: 'Normal', value: '400' },
+            { label: 'Medium', value: '500' },
+            { label: 'Bold', value: '600' },
+            { label: 'Extra Bold', value: '700' },
+          ]} />
+        </Row>
+        <Row label="Alignment">
+          <SelectInput value={style.textAlign || 'center'} onChange={v => set('textAlign', v)} options={[
+            { label: 'Left', value: 'left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Right', value: 'right' },
+          ]} />
+        </Row>
+        <Row label="Padding"><TextInput value={style.padding || '10px 12px'} onChange={v => set('padding', v)} placeholder="10px 12px" /></Row>
+        <Row label="Border Radius"><NumberInput value={style.borderRadius || 6} onChange={v => set('borderRadius', v)} min={0} max={20} /></Row>
+        <Row label="Border Colour"><ColorInput value={style.borderColor || '#06b6d4'} onChange={v => set('borderColor', v)} /></Row>
+        <Row label="Border Width"><NumberInput value={style.borderWidth || 1} onChange={v => set('borderWidth', v)} min={0} max={4} /></Row>
+        <Row label="Icon"><TextInput value={style.icon || '📅'} onChange={v => set('icon', v)} placeholder="📅" /></Row>
+      </PanelSection>
+      <DeleteSectionBtn section={section} onMutate={onMutate} />
+    </div>
+  );
+}
+
 // ─── Theme Panel ─────────────────────────────────────────────────────────────
 
 function ThemePanel({ doc, onMutate }: { doc: DRCEDocument; onMutate: (m: DRCEMutation) => void }) {
@@ -1405,6 +1447,7 @@ export function PropertiesPanel({ doc, selectedSectionId, onMutate, activeTab, o
       case 'grade_table':   return <GradeTablePanel    section={selectedSection as DRCEGradeTableSection}                   onMutate={onMutate} />;
       case 'spacer':        return <SpacerPanel        section={selectedSection as DRCESection & { type: 'spacer' }}        onMutate={onMutate} />;
       case 'divider':       return <DividerPanel       section={selectedSection as DRCESection & { type: 'divider' }}       onMutate={onMutate} />;
+      case 'next_term_begins': return <NextTermBeginsPanel section={selectedSection as DRCESection & { type: 'next_term_begins' }} onMutate={onMutate} />;
       default:              return (
         <div className="p-4 text-center text-xs text-gray-400">
           <p>No properties for</p>

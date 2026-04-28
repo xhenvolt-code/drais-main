@@ -37,6 +37,7 @@ const SECTION_LABELS: Record<string, string> = {
   grade_table:  'Grade Table',
   spacer:       'Spacer',
   divider:      'Divider',
+  next_term_begins: 'Next Term Begins',
 };
 
 const SECTION_ICONS: Record<string, string> = {
@@ -50,6 +51,7 @@ const SECTION_ICONS: Record<string, string> = {
   grade_table:  '🔢',
   spacer:       '↕️',
   divider:      '➖',
+  next_term_begins: '📅',
 };
 
 function SortableItem({
@@ -122,6 +124,7 @@ export function SectionListPanel({ sections, selectedId, onSelect, onMutate }: P
     { type: 'assessment',    label: 'Assessment',    icon: '📈' },
     { type: 'comments',      label: 'Comments',      icon: '💬' },
     { type: 'grade_table',   label: 'Grade Table',   icon: '🔢' },
+    { type: 'next_term_begins', label: 'Next Term Begins', icon: '📅' },
     { type: 'spacer',        label: 'Spacer',        icon: '↕️' },
     { type: 'divider',       label: 'Divider',       icon: '➖' },
     { type: 'header',        label: 'Header',        icon: '🏫' },
@@ -193,6 +196,12 @@ export function SectionListPanel({ sections, selectedId, onSelect, onMutate }: P
         return { ...base, type: 'spacer', style: { height: 20 } } as DRCESection;
       case 'divider':
         return { ...base, type: 'divider', style: { color: '#cccccc', thickness: 1, margin: '8px 0' } } as DRCESection;
+      case 'next_term_begins':
+        return { ...base, type: 'next_term_begins',
+          content: { text: 'Next term begins', customDate: '' },
+          style: { background: '#e0f2fe', color: '#0c4a6e', fontSize: 14, fontWeight: '600',
+            textAlign: 'center', padding: '10px 12px', borderRadius: 6, borderColor: '#06b6d4',
+            borderWidth: 1, icon: '📅' } } as DRCESection;
       case 'header':
         return { ...base, type: 'header',
           style: { layout: 'three-column', paddingBottom: 10, borderBottom: '1px solid #eee', opacity: 1, logoWidth: 64, logoHeight: 64 } } as DRCESection;

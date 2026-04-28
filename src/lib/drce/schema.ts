@@ -16,7 +16,8 @@ export type DRCESectionType =
   | 'comments'
   | 'grade_table'
   | 'spacer'
-  | 'divider';
+  | 'divider'
+  | 'next_term_begins';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 
@@ -429,6 +430,25 @@ export interface DRCEDividerSection extends DRCESectionBase {
   style: { color: string; thickness: number; margin: string };
 }
 
+export interface DRCENextTermBeginsSection extends DRCESectionBase {
+  type: 'next_term_begins';
+  content: { text: string; customDate?: string };
+  style: DRCENextTermBeginsStyle;
+}
+
+export type DRCENextTermBeginsStyle = {
+  background: string;
+  color: string;
+  fontSize: number;
+  fontWeight: string;
+  textAlign: 'left' | 'center' | 'right';
+  padding: string;
+  borderRadius: number;
+  borderColor?: string;
+  borderWidth?: number;
+  icon?: string;
+};
+
 export type DRCESection =
   | DRCEHeaderSection
   | DRCEBannerSection
@@ -439,7 +459,8 @@ export type DRCESection =
   | DRCECommentsSection
   | DRCEGradeTableSection
   | DRCESpacerSection
-  | DRCEDividerSection;
+  | DRCEDividerSection
+  | DRCENextTermBeginsSection;
 
 // ─── Document Metadata ────────────────────────────────────────────────────────
 
