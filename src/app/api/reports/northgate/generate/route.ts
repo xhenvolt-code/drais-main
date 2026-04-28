@@ -122,11 +122,40 @@ export async function GET(req: NextRequest) {
     const resolvedClassId = enroll?.class_id ?? classId;
     const resolvedTermId  = enroll?.term_id  ?? termId;
 
+    // ── 3a. Fetch teacher initials for this class (from class_subjects allocations) ─
+    let initialsMap: Record<string, string> = {};
+    if (resolvedClassId) {
+      try {
+        const [initRows]: any = await conn.execute(
+          `SELECT
+             sub.name AS subject_name,
+             COALESCE(
+               cs.custom_initials,
+               CONCAT(UPPER(LEFT(p.first_name, 1)), UPPER(LEFT(p.last_name, 1))),
+               ''
+             ) AS initials
+           FROM class_subjects cs
+           JOIN subjects sub ON cs.subject_id = sub.id
+           LEFT JOIN staff s ON cs.teacher_id = s.id
+           LEFT JOIN people p ON s.person_id = p.id
+           JOIN classes c ON cs.class_id = c.id
+           WHERE cs.class_id = ? AND c.school_id = ?`,
+          [resolvedClassId, NORTHGATE_SCHOOL_ID]
+        );
+        for (const r of initRows) {
+          initialsMap[r.subject_name] = r.initials;
+        }
+      } catch (err) {
+        console.warn('[northgate/generate] Could not fetch teacher initials:', err.message);
+        // Continue without initials — not critical
+      }
+    }
+
     // ── 3. Class results ──────────────────────────────────────────────────────
     const resultParams: any[] = [studentId];
     let resultFilter = '';
     if (resolvedClassId) { resultFilter += ' AND cr.class_id = ?'; resultParams.push(resolvedClassId); }
-    if (resolvedTermId)  { resultFilter += ' AND cr.term_id  = ?'; resultParams.push(resolvedTermId);  }
+    if (resolvedTermId)  { resultFilter += ' AND cr.term_id  = ?';  resultParams.push(resolvedTermId);  }
 
     const [resultRows]: any = await conn.execute(
       `SELECT cr.score, cr.grade, cr.remarks,
@@ -150,14 +179,14 @@ export async function GET(req: NextRequest) {
         total:    r.score   != null ? Number(r.score)   : null,
         grade:    r.grade   ?? null,
         comment:  r.remarks ?? null,
-        initials: null,
+        initials: initialsMap[r.subject_name] || null,
       };
       if (r.subject_type === 'theology') {
         otherSubjects.push(row);
       } else {
         principalSubjects.push(row);
-      }
-    }
+       }
+     }
 
     // ── 4. Totals + aggregates ────────────────────────────────────────────────
     const principalWithScore = principalSubjects.filter(s => s.eot != null);

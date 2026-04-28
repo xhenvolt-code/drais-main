@@ -196,6 +196,7 @@ export function getNavigationItems(
         { key: 'classes',         label: 'Classes',          icon: <School className="w-4 h-4" />,       href: '/academics/classes' },
         { key: 'streams',         label: 'Streams',          icon: <Target className="w-4 h-4" />,       href: '/academics/streams' },
         { key: 'subjects',        label: 'Subjects',         icon: <BookOpen className="w-4 h-4" />,     href: '/academics/subjects' },
+        { key: 'allocations',     label: 'Teacher Allocation', icon: <UserCheck className="w-4 h-4" />, href: '/academics/allocations' },
         { key: 'timetable',       label: 'Timetable',        icon: <Calendar className="w-4 h-4" />,     href: '/academics/timetable' },
         { key: 'academic-years',  label: 'Academic Years',   icon: <Calendar className="w-4 h-4" />,     href: '/academics/years' },
         { key: 'terms',           label: 'Terms',            icon: <Clock className="w-4 h-4" />,        href: '/terms/list' },

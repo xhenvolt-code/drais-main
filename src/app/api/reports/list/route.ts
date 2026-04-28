@@ -91,6 +91,7 @@ export async function GET(req: NextRequest) {
         ) AS teacher_name,
         (
           SELECT COALESCE(
+            cs2.custom_initials,
             NULLIF(CONCAT(
               COALESCE(LEFT(tp.first_name, 1), ''),
               COALESCE(LEFT(tp.last_name, 1), '')
