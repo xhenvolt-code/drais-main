@@ -38,6 +38,7 @@ export interface SchoolInfo {
   location: string;
   motto: string;
   phone: string;
+  center_no?: string;
 }
 
 export interface GradingRow {

@@ -748,7 +748,10 @@ function AssessmentPanel({ section, onMutate }: { section: DRCEAssessmentSection
         <Row label="Split fields">
           <NumberInput value={Number(style.positionFields ?? 2)} onChange={v => set('positionFields', v)} min={0} max={Math.max(section.fields.length, 1)} />
         </Row>
-        <Row label="Group label">
+        <Row label="Position label">
+          <TextInput value={String(style.positionLabel ?? 'Position')} onChange={v => set('positionLabel', v)} placeholder="Position" />
+        </Row>
+        <Row label="Grade label">
           <TextInput value={String(style.assessmentLabel ?? 'Grade Assessment')} onChange={v => set('assessmentLabel', v)} placeholder="Grade Assessment" />
         </Row>
         <Row label="Table layout">
@@ -1156,7 +1159,18 @@ function NextTermBeginsPanel({ section, onMutate }: { section: DRCESection & { t
 // ─── Theme Panel ─────────────────────────────────────────────────────────────
 
 function ThemePanel({ doc, onMutate }: { doc: DRCEDocument; onMutate: (m: DRCEMutation) => void }) {
-  const t = doc.theme;
+  const t = doc.theme || {
+    primaryColor: '#0000FF',
+    secondaryColor: '#B22222',
+    accentColor: '#999999',
+    fontFamily: 'Arial, sans-serif',
+    baseFontSize: 12,
+    pagePadding: '16px 18px',
+    pageBackground: '#ffffff',
+    pageBorder: { enabled: false, color: '#cccccc', width: 1, style: 'solid' as const, radius: 0 },
+    pageSize: 'a4' as const,
+    orientation: 'portrait' as const,
+  };
   const set = (path: string, value: unknown) => onMutate({ type: 'SET_THEME', path, value });
 
   return (

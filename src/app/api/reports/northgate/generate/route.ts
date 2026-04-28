@@ -79,7 +79,8 @@ export async function GET(req: NextRequest) {
               COALESCE(sc.address, '')  AS school_address,
               COALESCE(sc.location, sc.city, '') AS school_location,
               COALESCE(sc.motto, '')   AS school_motto,
-              COALESCE(sc.phone, sc.contact_phone, '') AS school_phone
+              COALESCE(sc.phone, sc.contact_phone, '') AS school_phone,
+              COALESCE(sc.center_no, '') AS school_center_no
        FROM students s
        JOIN people  p  ON p.id = s.person_id
        JOIN schools sc ON sc.id = s.school_id
@@ -294,6 +295,7 @@ export async function GET(req: NextRequest) {
         location: student.school_location|| 'Bulubandi Central B',
         motto:    student.school_motto   || 'IMPACT THROUGH EDUCATION',
         phone:    student.school_phone   || '0706416264',
+        center_no: student.school_center_no || '',
       },
       banner: `${enroll?.term_name ?? ''} REPORT`.trim() || 'TERM REPORT',
       studentDetails: {

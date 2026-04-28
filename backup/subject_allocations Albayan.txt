@@ -1,0 +1,42 @@
+Baby class Initials:
+Numbers, lang, writing => I. R
+Reading => I.R
+S.D(SOCIAL DEVELOPMENT) => K. L
+HEALTH HABITS => N.M 
+
+Top class Initials:
+Numbers, lang, writing => K. B
+S.D(SOCIAL DEVELOPMENT) => K. L
+HEALTH HABITS => N.M 
+
+Middle class Initials:
+Numbers, lang, writing => K. L
+Reading => I.R
+S.D(SOCIAL DEVELOPMENT) => K. L
+HEALTH HABITS => N.M 
+ 
+Initials for Primary one,promary two and primary three:
+    mathematics => M. S 
+    English => N. Z
+    ICT(taught in primary three only) => N.M
+    Literacy  one => K . Z
+    Literacy two => N .V
+    English => N. Z
+
+
+
+Initials for Primary four and promary five:
+    mathematics => M. H
+    English => S . A
+    Science => N . P 
+   social studies => K.M
+    ICT => N.M
+    
+
+Initials for Primary Six:
+    mathematics => O. H
+    English => W . A
+    Science => F.S
+   social studies => O.S
+    ICT => N.M
+    

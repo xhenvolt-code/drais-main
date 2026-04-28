@@ -168,6 +168,12 @@ export default function NorthgateClassicTemplate({ data }: Props) {
                 <p className="school-info">
                   {school.address}, Tel: {school.phone},<br />
                   {school.location}
+                  {school.center_no && (
+                    <>
+                      <br />
+                      UNEB Centre No: {school.center_no}
+                    </>
+                  )}
                 </p>
                 <p style={{ fontStyle: 'italic', fontWeight: 'bold', fontSize: 12 }}>
                   {school.motto}
