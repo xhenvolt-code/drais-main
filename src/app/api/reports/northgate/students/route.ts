@@ -46,8 +46,7 @@ export async function GET(req: NextRequest) {
       `SELECT t.id, t.name, ay.name AS academic_year
        FROM terms t
        LEFT JOIN academic_years ay ON ay.id = t.academic_year_id
-       ORDER BY t.id DESC
-       LIMIT 20`,
+       ORDER BY t.id DESC`,
     );
 
     // ── Student list ─────────────────────────────────────────────────────────
@@ -86,8 +85,7 @@ export async function GET(req: NextRequest) {
        LEFT JOIN classes   c  ON c.id  = e.class_id
        LEFT JOIN streams   st ON st.id = e.stream_id
        ${where}
-       ORDER BY c.name ASC, p.last_name ASC, p.first_name ASC
-       LIMIT 500`,
+       ORDER BY c.name ASC, p.last_name ASC, p.first_name ASC`,
       params,
     );
 
