@@ -183,31 +183,47 @@ function renderShapeEl(
   const moveCursor = isDraft ? 'crosshair' : 'move';
 
   if (s.type === 'rect') {
+    const rotation = s.rotation || 0;
+    const cx = s.x + s.w / 2;
+    const cy = s.y + s.h / 2;
     return (
-      <rect
-        x={s.x} y={s.y} width={s.w} height={s.h}
-        fill={s.fill} stroke={isSelected ? selStroke : s.stroke}
-        strokeWidth={isSelected ? Math.max(s.strokeWidth, 1.5) : s.strokeWidth}
-        strokeDasharray={isSelected ? '5 3' : undefined}
-        rx={s.radius}
-        opacity={s.opacity}
+      <g
         style={{ cursor: moveCursor }}
+        transform={rotation ? `rotate(${rotation} ${cx} ${cy})` : undefined}
         onMouseDown={onMouseDown}
-      />
+      >
+        <rect
+          x={s.x} y={s.y} width={s.w} height={s.h}
+          fill={s.fill} stroke={isSelected ? selStroke : s.stroke}
+          strokeWidth={isSelected ? Math.max(s.strokeWidth, 1.5) : s.strokeWidth}
+          strokeDasharray={isSelected ? '5 3' : undefined}
+          rx={s.radius}
+          opacity={s.opacity}
+          style={{ pointerEvents: 'auto' }}
+        />
+      </g>
     );
   }
   if (s.type === 'ellipse') {
+    const rotation = s.rotation || 0;
+    const cx = s.x + s.w / 2;
+    const cy = s.y + s.h / 2;
     return (
-      <ellipse
-        cx={s.x + s.w / 2} cy={s.y + s.h / 2}
-        rx={s.w / 2} ry={s.h / 2}
-        fill={s.fill} stroke={isSelected ? selStroke : s.stroke}
-        strokeWidth={isSelected ? Math.max(s.strokeWidth, 1.5) : s.strokeWidth}
-        strokeDasharray={isSelected ? '5 3' : undefined}
-        opacity={s.opacity}
+      <g
         style={{ cursor: moveCursor }}
+        transform={rotation ? `rotate(${rotation} ${cx} ${cy})` : undefined}
         onMouseDown={onMouseDown}
-      />
+      >
+        <ellipse
+          cx={cx} cy={cy}
+          rx={s.w / 2} ry={s.h / 2}
+          fill={s.fill} stroke={isSelected ? selStroke : s.stroke}
+          strokeWidth={isSelected ? Math.max(s.strokeWidth, 1.5) : s.strokeWidth}
+          strokeDasharray={isSelected ? '5 3' : undefined}
+          opacity={s.opacity}
+          style={{ pointerEvents: 'auto' }}
+        />
+      </g>
     );
   }
   if (s.type === 'line' || s.type === 'arrow') {
@@ -243,8 +259,15 @@ function renderShapeEl(
     );
   }
   if (s.type === 'text') {
+    const rotation = s.rotation || 0;
+    const cx = s.x + s.w / 2;
+    const cy = s.y + s.h / 2;
     return (
-      <g style={{ cursor: moveCursor }} onMouseDown={onMouseDown}>
+      <g
+        style={{ cursor: moveCursor }}
+        transform={rotation ? `rotate(${rotation} ${cx} ${cy})` : undefined}
+        onMouseDown={onMouseDown}
+      >
         {s.background !== 'transparent' && s.background && (
           <rect x={s.x} y={s.y} width={s.w} height={s.h} fill={s.background} />
         )}
@@ -275,16 +298,23 @@ function renderShapeEl(
   if (s.type === 'triangle' || s.type === 'diamond' || s.type === 'pentagon' || s.type === 'hexagon' || s.type === 'star') {
     const poly = s as DRCEPolygonShape;
     const pts = polygonPoints(poly.type, poly.x, poly.y, poly.w, poly.h);
+    const cx = poly.x + poly.w / 2;
+    const cy = poly.y + poly.h / 2;
     return (
-      <polygon
-        points={pts}
-        fill={poly.fill} stroke={isSelected ? selStroke : poly.stroke}
-        strokeWidth={isSelected ? Math.max(poly.strokeWidth, 1.5) : poly.strokeWidth}
-        strokeDasharray={isSelected ? '5 3' : undefined}
-        opacity={poly.opacity}
+      <g
         style={{ cursor: moveCursor }}
+        transform={poly.rotation ? `rotate(${poly.rotation} ${cx} ${cy})` : undefined}
         onMouseDown={onMouseDown}
-      />
+      >
+        <polygon
+          points={pts}
+          fill={poly.fill} stroke={isSelected ? selStroke : poly.stroke}
+          strokeWidth={isSelected ? Math.max(poly.strokeWidth, 1.5) : poly.strokeWidth}
+          strokeDasharray={isSelected ? '5 3' : undefined}
+          opacity={poly.opacity}
+          style={{ pointerEvents: 'auto' }}
+        />
+      </g>
     );
   }
   return null;

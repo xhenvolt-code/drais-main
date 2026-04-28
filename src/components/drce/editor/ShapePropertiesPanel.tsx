@@ -213,6 +213,50 @@ function TextPanel({ shape, onUpdate }: { shape: DRCETextShape; onUpdate: (u: Pa
   );
 }
 
+function PolygonPanel({ shape, onUpdate }: { shape: DRCEShape & { type: 'triangle' | 'diamond' | 'pentagon' | 'hexagon' | 'star' }; onUpdate: (u: Partial<DRCEShape>) => void }) {
+  const s = shape;
+  return (
+    <>
+      <Row label="Fill">
+        <ColorInput value={s.fill} onChange={v => onUpdate({ fill: v } as Partial<DRCEShape>)} />
+        <button
+          type="button" title="Set transparent"
+          onClick={() => onUpdate({ fill: 'transparent' } as Partial<DRCEShape>)}
+          className="text-[10px] border rounded px-1 py-0.5 text-gray-500 hover:bg-gray-50"
+        >none</button>
+      </Row>
+      <Row label="Stroke">
+        <ColorInput value={s.stroke} onChange={v => onUpdate({ stroke: v } as Partial<DRCEShape>)} />
+      </Row>
+      <Row label="Thickness">
+        <NumberInput value={s.strokeWidth} min={0} max={20} onChange={v => onUpdate({ strokeWidth: v } as Partial<DRCEShape>)} />
+      </Row>
+      <Row label="Opacity">
+        <input type="range" min={0} max={1} step={0.05} value={s.opacity}
+          onChange={e => onUpdate({ opacity: Number(e.target.value) } as Partial<DRCEShape>)}
+          className="w-full" />
+        <span className="text-xs text-gray-400 flex-shrink-0 w-6">{Math.round(s.opacity * 100)}%</span>
+      </Row>
+      <Row label="X">
+        <NumberInput value={Math.round(s.x)} onChange={v => onUpdate({ x: v } as Partial<DRCEShape>)} />
+      </Row>
+      <Row label="Y">
+        <NumberInput value={Math.round(s.y)} onChange={v => onUpdate({ y: v } as Partial<DRCEShape>)} />
+      </Row>
+      <Row label="Width">
+        <NumberInput value={Math.round(s.w)} min={10} onChange={v => onUpdate({ w: v } as Partial<DRCEShape>)} />
+      </Row>
+      <Row label="Height">
+        <NumberInput value={Math.round(s.h)} min={10} onChange={v => onUpdate({ h: v } as Partial<DRCEShape>)} />
+      </Row>
+      <Row label="Rotation">
+        <NumberInput value={Math.round(s.rotation)} min={0} max={360} onChange={v => onUpdate({ rotation: v } as Partial<DRCEShape>)} />
+        <span className="text-xs text-gray-400 flex-shrink-0">°</span>
+      </Row>
+    </>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function ShapePropertiesPanel({ shape, onUpdate, onDelete }: Props) {
@@ -226,10 +270,15 @@ export function ShapePropertiesPanel({ shape, onUpdate, onDelete }: Props) {
 
   const typeLabel =
     shape.type === 'rect' ? 'Rectangle' :
-    shape.type === 'ellipse' ? 'Ellipse' :
+    shape.type === 'ellipse' ? 'Circle' :
     shape.type === 'arrow' ? 'Arrow' :
     shape.type === 'line' ? 'Line' :
-    shape.type === 'text' ? 'Text Box' : 'Shape';
+    shape.type === 'text' ? 'Text Box' :
+    shape.type === 'triangle' ? 'Triangle' :
+    shape.type === 'diamond' ? 'Diamond' :
+    shape.type === 'pentagon' ? 'Pentagon' :
+    shape.type === 'hexagon' ? 'Hexagon' :
+    shape.type === 'star' ? 'Star' : 'Shape';
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -255,6 +304,9 @@ export function ShapePropertiesPanel({ shape, onUpdate, onDelete }: Props) {
         )}
         {shape.type === 'text' && (
           <TextPanel shape={shape as DRCETextShape} onUpdate={onUpdate} />
+        )}
+        {(shape.type === 'triangle' || shape.type === 'diamond' || shape.type === 'pentagon' || shape.type === 'hexagon' || shape.type === 'star') && (
+          <PolygonPanel shape={shape as DRCEShape & { type: 'triangle' | 'diamond' | 'pentagon' | 'hexagon' | 'star' }} onUpdate={onUpdate} />
         )}
       </div>
     </div>
