@@ -953,10 +953,10 @@ const ReportsPage = () => {
   };
 
   // Handle inline editing of teacher initials
-  const handleInitialsChange = (classId: string, subjectId: string, newInitials: string): void => {
+  const handleInitialsChange = (initialsKey: string, classId?: number, subjectId?: number, newInitials?: string): void => {
     setTeacherInitials((prev) => ({
       ...prev,
-      [`${classId}-${subjectId}`]: newInitials,
+      [initialsKey]: newInitials || '',
     }));
   };
 
@@ -1666,8 +1666,13 @@ const ReportsPage = () => {
 
                           const scoreToUse = isEndOfTerm ? totalMarks : midTermMarks;
 
-                          const initialsKey = `${student.class_name}-${r.subject_name}`;
+                          // Use class_id and subject_id for proper syncing across all reports
+                          const initialsKey = student.class_id && r.subject_id 
+                            ? `${student.class_id}-${r.subject_id}`
+                            : `${student.class_name}-${r.subject_name}`;
+                          
                           const currentInitials = teacherInitials[initialsKey] || 
+                            r.teacher_initials ||
                             r.teacher_name?.split(' ').map((n: string) => n[0]).join('') || 'N/A';
 
                           const tdStyle = { border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign, color: activeLayout.table.td.color };
@@ -1679,13 +1684,16 @@ const ReportsPage = () => {
                               <td style={{ ...tdStyle, cursor: 'text' }} contentEditable suppressContentEditableWarning>{getGrade(scoreToUse || 0, isNursery)}</td>
                               <td style={{ ...tdStyle, cursor: 'text', fontSize: activeLayout.table.fontSize - 1 }} contentEditable suppressContentEditableWarning>{commentsForGrade(getGrade(scoreToUse || 0, isNursery))}</td>
                               <td
-                                style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign, color: activeLayout.table.td.color }}
+                                style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign, color: activeLayout.table.td.color, cursor: 'text' }}
                                 contentEditable
                                 suppressContentEditableWarning
                                 onBlur={(e) => {
                                   const newInitials = e.currentTarget.textContent?.trim() || 'N/A';
-                                  handleInitialsChange(student.class_name, r.subject_name, newInitials);
-                                  saveInitialsToBackend(student.class_name, r.subject_name, newInitials);
+                                  handleInitialsChange(initialsKey, student.class_id, r.subject_id, newInitials);
+                                  // Save using class_id and subject_id for proper cross-report syncing
+                                  if (student.class_id && r.subject_id) {
+                                    saveInitialsToBackend(String(student.class_id), String(r.subject_id), newInitials);
+                                  }
                                 }}
                               >
                                 {currentInitials}
