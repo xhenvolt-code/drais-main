@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
 import { getSessionSchoolId } from '@/lib/auth';
+import { isSubjectAllocatedToClass } from '@/lib/subject-allocation-validation';
 
 export async function GET(req: NextRequest) {
   const session = await getSessionSchoolId(req);
@@ -221,6 +222,21 @@ export async function POST(req: NextRequest) {
   const connection = await getConnection();
 
   try {
+    // ENFORCE: Verify subject is allocated to this class
+    const subjectAllocated = await isSubjectAllocatedToClass(connection, class_id, subject_id);
+    if (!subjectAllocated) {
+      const [subjectName]: any = await connection.execute(
+        'SELECT name FROM subjects WHERE id = ?',
+        [subject_id]
+      );
+      const subjName = subjectName?.length > 0 ? subjectName[0].name : `ID: ${subject_id}`;
+      await connection.end();
+      return NextResponse.json({
+        error: `Subject Allocation Violation: "${subjName}" is not allocated to this class. Results cannot be entered for subjects not in the class allocation.`,
+        code: 'SUBJECT_NOT_ALLOCATED'
+      }, { status: 400 });
+    }
+
     // Collect all student_ids and verify they belong to this school in one query
     const studentIds = entries.map((e: any) => e.student_id).filter(Boolean);
     const placeholders = studentIds.map(() => '?').join(',');

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
 import { getSessionSchoolId } from '@/lib/auth';
+import { isSubjectAllocatedToClass } from '@/lib/subject-allocation-validation';
 
 /**
  * GET /api/tahfiz/results
@@ -179,6 +180,22 @@ export async function POST(request: NextRequest) {
           student_id,
           subject_id,
           error: 'Subject is not a Tahfiz subject'
+        });
+        continue;
+      }
+
+      // ENFORCE: Verify subject is allocated to this class
+      const subjectAllocated = await isSubjectAllocatedToClass(connection, class_id, subject_id);
+      if (!subjectAllocated) {
+        const [subjectName]: any = await connection.execute(
+          'SELECT name FROM subjects WHERE id = ?',
+          [subject_id]
+        );
+        const subjName = subjectName?.length > 0 ? subjectName[0].name : `ID: ${subject_id}`;
+        errors.push({
+          student_id,
+          subject_id,
+          error: `Subject "${subjName}" is not allocated to this class. Results cannot be entered for subjects not in the class allocation.`
         });
         continue;
       }

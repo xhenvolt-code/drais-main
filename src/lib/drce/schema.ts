@@ -394,12 +394,33 @@ export interface DRCERibbonSection extends DRCESectionBase {
   style: DRCERibbonStyle;
 }
 
+export interface DRCEResultsTableTotalsConfig {
+  /** Whether to show a totals row at the end of the table */
+  enabled: boolean;
+  /** Column ID to use as the label for the totals row (e.g., 'subject_name' column displays "TOTALS") */
+  labelColumnId: string;
+  /** Label text to display in the label column */
+  labelText: string;
+  /** Column IDs to sum up (numeric columns) */
+  sumColumnIds: string[];
+  /** Whether to show an average row after totals */
+  showAverage: boolean;
+  /** Column ID for the average label row */
+  averageLabelColumnId?: string;
+  /** Average label text */
+  averageLabelText?: string;
+  /** Style for the totals row */
+  rowStyle?: DRCEColumnStyle;
+}
+
 export interface DRCEResultsTableSection extends DRCESectionBase {
   type: 'results_table';
   columns: DRCEColumn[];
   style: DRCEResultsTableStyle;
   /** Filter which subjects to show: 'all' (default), 'primary' (core only), 'secondary' (non-core only) */
   subjectFilter?: 'all' | 'primary' | 'secondary';
+  /** Configuration for displaying totals/average rows */
+  totalsConfig?: DRCEResultsTableTotalsConfig;
 }
 
 export interface DRCEAssessmentSection extends DRCESectionBase {

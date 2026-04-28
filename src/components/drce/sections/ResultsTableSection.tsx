@@ -18,6 +18,57 @@ interface Props {
   onCellChange?: (columnId: string, rowIndex: number, newValue: string) => Promise<void>;
 }
 
+/**
+ * Calculate totals for numeric columns
+ */
+function calculateTotals(
+  results: Array<Record<string, any>>,
+  sumColumnIds: string[],
+  ctx: DRCEDataContext,
+): Record<string, number> {
+  const totals: Record<string, number> = {};
+
+  sumColumnIds.forEach(colId => {
+    let sum = 0;
+    let count = 0;
+
+    results.forEach(row => {
+      const columnBinding = ctx.columns?.find(c => c.id === colId)?.binding || '';
+      if (columnBinding) {
+        const value = resolveBinding(columnBinding, ctx, row);
+        const numValue = parseFloat(String(value));
+        if (!isNaN(numValue)) {
+          sum += numValue;
+          count++;
+        }
+      }
+    });
+
+    totals[colId] = count > 0 ? sum : 0;
+  });
+
+  return totals;
+}
+
+/**
+ * Calculate averages for numeric columns
+ */
+function calculateAverages(
+  results: Array<Record<string, any>>,
+  sumColumnIds: string[],
+  ctx: DRCEDataContext,
+): Record<string, number> {
+  const totals = calculateTotals(results, sumColumnIds, ctx);
+  const count = results.length;
+
+  const averages: Record<string, number> = {};
+  sumColumnIds.forEach(colId => {
+    averages[colId] = count > 0 ? totals[colId] / count : 0;
+  });
+
+  return averages;
+}
+
 export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
   const [editingCell, setEditingCell] = useState<{ col: string; row: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +91,12 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
           ? (r.subjectType ?? 'primary') === 'primary'
           : (r.subjectType ?? 'primary') === 'secondary',
       );
+
+  const totalsConfig = section.totalsConfig;
+  const totalsEnabled = totalsConfig?.enabled ?? false;
+  const sumColumnIds = totalsConfig?.sumColumnIds ?? [];
+  const totals = totalsEnabled ? calculateTotals(results, sumColumnIds, ctx) : {};
+  const averages = totalsEnabled && totalsConfig?.showAverage ? calculateAverages(results, sumColumnIds, ctx) : {};
 
   const handleCellBlur = async (
     e: React.FocusEvent<HTMLTableCellElement>,
@@ -104,6 +161,72 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
             })}
           </tr>
         ))}
+        
+        {/* Totals Row */}
+        {totalsEnabled && (
+          <tr style={{ fontWeight: 'bold', backgroundColor: 'rgba(0, 0, 0, 0.05)' }}>
+            {visibleCols.map(col => {
+              const isTotalCol = sumColumnIds.includes(col.id);
+              const isLabelCol = col.id === totalsConfig?.labelColumnId;
+              let cellContent: React.ReactNode = '';
+
+              if (isLabelCol) {
+                cellContent = totalsConfig?.labelText ?? 'TOTAL';
+              } else if (isTotalCol) {
+                const total = totals[col.id];
+                cellContent = total !== undefined && total !== null 
+                  ? (typeof total === 'number' && total % 1 !== 0 ? total.toFixed(2) : total)
+                  : '';
+              }
+
+              return (
+                <td
+                  key={col.id}
+                  style={{
+                    ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
+                    fontWeight: 'bold',
+                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  }}
+                >
+                  {cellContent}
+                </td>
+              );
+            })}
+          </tr>
+        )}
+
+        {/* Average Row */}
+        {totalsEnabled && totalsConfig?.showAverage && (
+          <tr style={{ fontStyle: 'italic', backgroundColor: 'rgba(0, 0, 0, 0.02)' }}>
+            {visibleCols.map(col => {
+              const isAverageCol = sumColumnIds.includes(col.id);
+              const isLabelCol = col.id === (totalsConfig?.averageLabelColumnId ?? totalsConfig?.labelColumnId);
+              let cellContent: React.ReactNode = '';
+
+              if (isLabelCol) {
+                cellContent = totalsConfig?.averageLabelText ?? 'AVERAGE';
+              } else if (isAverageCol) {
+                const average = averages[col.id];
+                cellContent = average !== undefined && average !== null 
+                  ? (typeof average === 'number' && average % 1 !== 0 ? average.toFixed(2) : average)
+                  : '';
+              }
+
+              return (
+                <td
+                  key={col.id}
+                  style={{
+                    ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
+                    fontStyle: 'italic',
+                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                  }}
+                >
+                  {cellContent}
+                </td>
+              );
+            })}
+          </tr>
+        )}
       </tbody>
     </table>
   );

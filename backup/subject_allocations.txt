@@ -1,11 +1,15 @@
-apio esther:
-    math primary one and pimary two math, literacy II for primary 2
+Nursery Teachers - Northgate School:
 
-Asekenye grace :
-    Literacy II for Primary One, english for primary one and primary three
+Apio Esther (A.E):
+    NUMBERS (Baby Class, Middle Class, Top Class)
+    LANGUAGE DEVELOPMENT II (Baby Class, Middle Class, Top Class)
 
-Ikomera Christine :
-    Literacy I primary One and Primary 2 then RE for primary two
+Asekenye Grace (A.G):
+    LANGUAGE DEVELOPMENT II (Baby Class, Middle Class, Top Class)
+
+Ikomera Christine (I.C):
+    LANGUAGE DEVELOPMENT I (Baby Class, Middle Class, Top Class)
+    RELIGIOUS EDUCATION (Baby Class, Middle Class, Top Class)
 
 Awor Topista:
  English (primary five, primary two), Literacy II primary three, R.E primary one

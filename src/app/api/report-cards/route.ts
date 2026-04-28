@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
 import { getSessionSchoolId } from '@/lib/auth';
+import { filterToAllocatedSubjects, getValidSubjectsForClass } from '@/lib/subject-allocation-validation';
 
 /**
  * Report Cards API
@@ -216,6 +217,7 @@ export async function POST(req: NextRequest) {
         `, [reportCardId, stu.total_score, stu.average_score, stu.min_score, stu.max_score, stu.position]);
 
         // Generate report_card_subjects from class_results
+        // ENFORCE: Only include subjects allocated to this class
         const [subjectResults]: any = await conn.execute(`
           SELECT
             cr.subject_id,
@@ -230,7 +232,10 @@ export async function POST(req: NextRequest) {
           GROUP BY cr.subject_id, cr.grade, cr.remarks
         `, [stu.student_id, class_id, term_id]);
 
-        for (const sr of subjectResults) {
+        // Filter to only allocated subjects
+        const allocatedSubjects = await filterToAllocatedSubjects(conn, class_id, subjectResults);
+
+        for (const sr of allocatedSubjects) {
           // Check if report_card_subjects row already exists
           const [existingSub]: any = await conn.execute(
             `SELECT id FROM report_card_subjects WHERE report_card_id = ? AND subject_id = ?`,
