@@ -454,10 +454,16 @@ const ReportsPage = () => {
 
     validResults.forEach(r => {
       const className = r.class_name || 'Unknown Class';
+
+      // Additional validation: ensure class name is reasonable and not from old corrupted data
+      if (className === 'Unknown Class' || className.length > 20 || !/^[A-Za-z0-9\s\-\.]+$/.test(className)) {
+        return; // Skip invalid class names
+      }
+
       if (!groups[className]) {
         groups[className] = { className, students: [] };
       }
-      
+
       let student = groups[className].students.find(s => s.student_id === r.student_id);
       if (!student) {
         // Improved photo URL handling for Next.js Image component
@@ -497,18 +503,22 @@ const ReportsPage = () => {
     }
     
     if (filters.classId) {
+      const targetClass = String(filters.classId).toLowerCase().trim();
       groups = Object.fromEntries(
-        Object.entries(groups).filter(([_, v]) => {
+        Object.entries(groups).filter(([className, v]) => {
           if (!v || !Array.isArray(v.students)) return false;
-          return String(v.className || '').toLowerCase() === String(filters.classId).toLowerCase() ||
-            v.students.some(s => s && String(s.class_name || '').toLowerCase() === String(filters.classId).toLowerCase());
+          // Strict class matching: only include groups where the class name exactly matches
+          return String(className || '').toLowerCase().trim() === targetClass;
         })
       );
     }
     
     Object.values(groups).forEach(g => {
       if (!g || !Array.isArray(g.students)) return;
-      
+
+      // First, filter students to only include those whose class_name matches the group class
+      g.students = g.students.filter(s => s && String(s.class_name || '').toLowerCase().trim() === String(g.className).toLowerCase().trim());
+
       g.students = g.students.filter(s => {
         if (!s || !Array.isArray(s.results)) return false;
         // Ensure student has valid results

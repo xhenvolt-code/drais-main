@@ -230,8 +230,11 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
                   if (totalsConfig?.showTotalPossible) {
                     cellContent = totalPossible.toFixed(1);
                   }
-                } else if (header.includes('score') || header.includes('marks') || header.includes('obtained')) {
-                  // Show total obtained in score/marks/obtained columns
+                } else if (header.includes('total') && header.includes('marks')) {
+                  // Total Marks column: show "100" for each subject (subject total)
+                  cellContent = '100';
+                } else if (header.includes('total') || header.includes('obtained') || header.includes('score') || header.includes('eot')) {
+                  // Total Row: show sum of obtained marks in total/obtained/score/EOT columns
                   if (totalsConfig?.showTotalObtained !== false) {
                     cellContent = totalObtained.toFixed(1);
                   }
@@ -239,11 +242,6 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
                   // Show total possible in possible/maximum columns
                   if (totalsConfig?.showTotalPossible) {
                     cellContent = totalPossible.toFixed(1);
-                  }
-                } else if (header.includes('total') || header.includes('grade') || header.includes('points')) {
-                  // Show total obtained in total/grade/points columns (common score columns)
-                  if (totalsConfig?.showTotalObtained !== false) {
-                    cellContent = totalObtained.toFixed(1);
                   }
                 }
                 // No fallback - only show totals in specifically identified columns
