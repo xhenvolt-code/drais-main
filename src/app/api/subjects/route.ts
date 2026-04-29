@@ -93,8 +93,19 @@ export async function GET(req: NextRequest) {
 
     connection = await getConnection();
 
-    // Build base SQL
-    let sql = 'SELECT id, name, code, subject_type, academic_type FROM subjects WHERE school_id = ? AND deleted_at IS NULL';
+    // Build base SQL - now including allocation info
+    let sql = `SELECT 
+      s.id, 
+      s.name, 
+      s.code, 
+      s.subject_type, 
+      s.academic_type,
+      GROUP_CONCAT(c.name SEPARATOR ', ') as allocated_classes,
+      COUNT(cs.id) as allocation_count
+    FROM subjects s
+    LEFT JOIN class_subjects cs ON s.id = cs.subject_id
+    LEFT JOIN classes c ON cs.class_id = c.id
+    WHERE s.school_id = ? AND s.deleted_at IS NULL`;
     const params: any[] = [schoolId];
 
     if (type) {
@@ -113,9 +124,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Get total count
-    const countSql = sql.replace('SELECT id, name, code, subject_type, academic_type', 'SELECT COUNT(*) as total');
+    const countSql = sql.replace('SELECT \n      s.id, \n      s.name, \n      s.code, \n      s.subject_type, \n      s.academic_type,\n      GROUP_CONCAT(c.name SEPARATOR \', \') as allocated_classes,\n      COUNT(cs.id) as allocation_count\n    FROM', 'SELECT COUNT(DISTINCT s.id) as total FROM');
     const [countResult]: any = await connection.execute(countSql, params);
     const total = countResult[0]?.total || 0;
+
+    sql += ' GROUP BY s.id, s.name, s.code, s.subject_type, s.academic_type';
 
     sql += ' ORDER BY name ASC';
     if (usePagination && limit) {

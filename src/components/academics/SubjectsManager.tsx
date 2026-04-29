@@ -19,6 +19,8 @@ interface Subject {
   code?: string;
   subject_type?: string;
   academic_type?: string;
+  allocated_classes?: string | null;
+  allocation_count?: number;
 }
 
 interface ClassOption {
@@ -505,6 +507,7 @@ export const SubjectsManager: React.FC = () => {
                 <th className="text-left px-6 py-4 font-semibold">Subject Name</th>
                 <th className="text-left px-6 py-4 font-semibold">Code</th>
                 <th className="text-left px-6 py-4 font-semibold">Type</th>
+                <th className="text-left px-6 py-4 font-semibold">Scope (Classes)</th>
                 <th className="text-center px-6 py-4 font-semibold">Actions</th>
               </tr>
             </thead>
@@ -536,6 +539,30 @@ export const SubjectsManager: React.FC = () => {
                       {item.academic_type === 'theology' ? 'Theology' : 'Secular'}
                     </span>
                   </td>
+                  <td className="px-6 py-4 text-gray-700 dark:text-gray-300">
+                    {item.allocated_classes && item.allocated_classes.length > 0 ? (
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium">
+                          {(item.allocation_count || 0) > 0 && (
+                            <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs font-semibold mr-2">
+                              {item.allocation_count} classes
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          {item.allocated_classes.split(', ').map((cls, idx) => (
+                            <div key={idx} className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mr-2 mb-1">
+                              {cls}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-orange-600 dark:text-orange-400 text-sm font-semibold">
+                        ⚠️ No classes assigned
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-2">
                       <button
@@ -566,7 +593,7 @@ export const SubjectsManager: React.FC = () => {
               
               {!loading && items.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                     <div className="flex flex-col items-center gap-2">
                       <Search className="w-8 h-8 text-gray-300" />
                       <p>No subjects found</p>
