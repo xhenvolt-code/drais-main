@@ -211,29 +211,37 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
               if (isFirstCol) {
                 // Show TOTAL label in the first column
                 cellContent = totalsConfig?.labelText ?? 'TOTAL';
-              } else if (col.header.toLowerCase().includes('score') || col.header.toLowerCase().includes('marks') || col.header.toLowerCase().includes('total')) {
-                // Show total obtained in score/marks columns
-                if (totalsConfig?.showTotalObtained !== false) {
-                  cellContent = totalObtained.toFixed(1);
-                }
-              } else if (col.header.toLowerCase().includes('percentage') || col.header.toLowerCase().includes('%')) {
-                // Show percentage in percentage columns
-                if (totalsConfig?.showPercentage !== false) {
-                  cellContent = `${percentage.toFixed(1)}%`;
-                }
-              } else if (col.header.toLowerCase().includes('average')) {
-                // Show average in average columns
-                if (totalsConfig?.showAverage) {
-                  cellContent = averageScore.toFixed(1);
-                }
-              } else if (col.header.toLowerCase().includes('subject') || col.header.toLowerCase().includes('name')) {
-                // Show total possible in subject/name column if configured
-                if (totalsConfig?.showTotalPossible) {
-                  cellContent = totalPossible.toFixed(1);
-                }
               } else {
-                // For any other columns, show total obtained as default
-                cellContent = totalObtained.toFixed(1);
+                // Determine what to show based on column type and configuration
+                const header = col.header.toLowerCase();
+
+                if (header.includes('percentage') || header.includes('%')) {
+                  // Show percentage in percentage columns
+                  if (totalsConfig?.showPercentage !== false) {
+                    cellContent = `${percentage.toFixed(1)}%`;
+                  }
+                } else if (header.includes('average')) {
+                  // Show average in average columns
+                  if (totalsConfig?.showAverage) {
+                    cellContent = averageScore.toFixed(1);
+                  }
+                } else if (header.includes('subject') || header.includes('name')) {
+                  // Show total possible in subject/name column if configured
+                  if (totalsConfig?.showTotalPossible) {
+                    cellContent = totalPossible.toFixed(1);
+                  }
+                } else if (header.includes('score') || header.includes('marks') || header.includes('obtained')) {
+                  // Show total obtained in score/marks/obtained columns
+                  if (totalsConfig?.showTotalObtained !== false) {
+                    cellContent = totalObtained.toFixed(1);
+                  }
+                } else if (header.includes('possible') || header.includes('maximum')) {
+                  // Show total possible in possible/maximum columns
+                  if (totalsConfig?.showTotalPossible) {
+                    cellContent = totalPossible.toFixed(1);
+                  }
+                }
+                // For other columns, leave empty (no default total display)
               }
 
               return (
