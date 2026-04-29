@@ -603,12 +603,18 @@ export interface DRCEMetaContext {
   reportTitle: string;
 }
 
+export type Language = 'en' | 'ar';
+
 export interface DRCEDataContext {
   student: DRCEStudentData;
   results: DRCEResultRow[];
   assessment: DRCEAssessmentData;
   comments: DRCECommentsData;
   meta: DRCEMetaContext;
+  /** Current language for rendering: 'en' | 'ar' */
+  language?: Language;
+  /** Columns visible in results table (injected by section renderer) */
+  columns?: Array<{ id: string; binding: string }>;
 }
 
 // ─── DB Row (as stored in dvcf_documents) ────────────────────────────────────

@@ -1425,6 +1425,8 @@ const ReportsPage = () => {
                       registration_no: schoolInfo.registration_no || undefined,
                       logo_url: schoolInfo.logo_url || '/uploads/logo.png',
                     },
+                    language: selectedLanguage,
+                    isRTL: selectedLanguage === 'ar',
                   };
                   return (
                     <div

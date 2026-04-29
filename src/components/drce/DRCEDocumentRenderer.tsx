@@ -40,15 +40,18 @@ function renderSection(
   renderCtx: DRCERenderContext,
 ) {
   const { theme } = doc;
+  // Enhanced contexts with language support
+  const enhancedDataCtx = { ...dataCtx, language: renderCtx.language };
+  
   switch (section.type) {
     case 'header':       return <HeaderSection      key={section.id} section={section} theme={theme} ctx={renderCtx} />;
-    case 'banner':       return <BannerSection      key={section.id} section={section} theme={theme} ctx={dataCtx} />;
-    case 'student_info': return <StudentInfoSection key={section.id} section={section} theme={theme} ctx={dataCtx} />;
-    case 'ribbon':       return <RibbonSection      key={section.id} section={section} theme={theme} ctx={dataCtx} />;
-    case 'results_table':return <ResultsTableSection key={section.id} section={section} theme={theme} ctx={dataCtx} />;
-    case 'assessment':   return <AssessmentSection  key={section.id} section={section} theme={theme} ctx={dataCtx} />;
-    case 'comments':     return <CommentsSection    key={section.id} section={section} theme={theme} ctx={dataCtx} />;
-    case 'grade_table':  return <GradeTableSection  key={section.id} section={section} theme={theme} />;
+    case 'banner':       return <BannerSection      key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
+    case 'student_info': return <StudentInfoSection key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
+    case 'ribbon':       return <RibbonSection      key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
+    case 'results_table':return <ResultsTableSection key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
+    case 'assessment':   return <AssessmentSection  key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
+    case 'comments':     return <CommentsSection    key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
+    case 'grade_table':  return <GradeTableSection  key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
     case 'spacer':       return <SpacerSection      key={section.id} section={section} />;
     case 'divider':      return <DividerSection     key={section.id} section={section} />;
     case 'next_term_begins': return <NextTermBeginsSection key={section.id} section={section} />;

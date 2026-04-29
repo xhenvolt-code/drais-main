@@ -9,6 +9,7 @@ import {
   resolveTableDataCellStyle,
 } from '@/lib/drce/styleResolver';
 import { resolveBinding } from '@/lib/drce/bindingResolver';
+import { t, translateSubject } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCEResultsTableSection;
@@ -75,12 +76,22 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
 
   if (!section.visible) return null;
 
+  const language = ctx.language ?? 'en';
+  const isRTL = language === 'ar';
   const { style } = section;
-  const tableStyle = resolveTableStyle(style);
+  const tableStyle = { 
+    ...resolveTableStyle(style), 
+    direction: isRTL ? 'rtl' : 'ltr'
+  };
 
-  const visibleCols = [...(section.columns || [])]
+  let visibleCols = [...(section.columns || [])]
     .filter(c => c.visible)
     .sort((a, b) => a.order - b.order);
+
+  // Reverse column order for RTL
+  if (isRTL) {
+    visibleCols = visibleCols.slice().reverse();
+  }
 
   const allResults = ctx.results ?? [];
   const subjectFilter = section.subjectFilter ?? 'all';
@@ -126,14 +137,21 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
       </colgroup>
       <thead>
         <tr>
-          {visibleCols.map(col => (
-            <th
-              key={col.id}
-              style={resolveTableHeaderCellStyle(style, col.align, col.style)}
-            >
-              {col.header}
-            </th>
-          ))}
+          {visibleCols.map(col => {
+            // Translate column header if it's a known key
+            const headerText = (t(col.header as any, language) !== col.header) 
+              ? t(col.header as any, language)
+              : col.header; // Fallback to original if not in dictionary
+            
+            return (
+              <th
+                key={col.id}
+                style={resolveTableHeaderCellStyle(style, col.align, col.style)}
+              >
+                {headerText}
+              </th>
+            );
+          })}
         </tr>
       </thead>
       <tbody>

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import type { DRCEHeaderSection, DRCETheme, DRCEHeaderComponentStyle } from '@/lib/drce/schema';
 import { resolveHeaderStyle } from '@/lib/drce/styleResolver';
 import type { DRCERenderContext } from '../types';
+import { t } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCEHeaderSection;
@@ -57,7 +58,7 @@ export function HeaderSection({ section, theme, ctx }: Props) {
   if (!section.visible) return null;
   
   const containerStyle = resolveHeaderStyle(section.style);
-  const { school } = ctx;
+  const { school, language = 'en', isRTL = false } = ctx;
   const gap = section.style.gap ?? 12;
 
   // Determine what components should be visible
@@ -74,7 +75,7 @@ export function HeaderSection({ section, theme, ctx }: Props) {
     school.logo_url ? (
       <Image
         src={school.logo_url}
-        alt="School Logo"
+        alt={t('schoolLogo', language)}
         width={section.style.logoWidth ?? 64}
         height={section.style.logoHeight ?? 64}
         style={{
@@ -111,11 +112,11 @@ export function HeaderSection({ section, theme, ctx }: Props) {
   ) {
     if (section.style.layout === 'centered') {
       return (
-        <div style={containerStyle}>
+        <div style={{ ...containerStyle, direction: isRTL ? 'rtl' : 'ltr' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: 4 }}>
             {logoImg && <div>{logoImg}</div>}
             <div style={{ textAlign: 'center' }}>
-              {showName && (
+              {showName && language === 'en' && (
                 <div
                   style={{
                     fontWeight: 'bold',
@@ -127,12 +128,28 @@ export function HeaderSection({ section, theme, ctx }: Props) {
                   {school.name}
                 </div>
               )}
-              {showArabicName && (
+              {showArabicName && language === 'ar' && (
+                <div
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: theme.baseFontSize + 2,
+                    color: theme.primaryColor,
+                    direction: 'rtl',
+                    fontFamily: 'Noto Naskh Arabic, serif',
+                    ...resolveComponentStyle(section.style.arabicNameStyle, theme),
+                  }}
+                >
+                  {school.arabic_name}
+                </div>
+              )}
+              {/* Show both if we have both and template allows */}
+              {showName && showArabicName && language === 'en' && school.arabic_name && (
                 <div
                   style={{
                     fontSize: theme.baseFontSize,
                     color: theme.primaryColor,
                     direction: 'rtl',
+                    fontFamily: 'Noto Naskh Arabic, serif',
                     ...resolveComponentStyle(section.style.arabicNameStyle, theme),
                   }}
                 >
@@ -144,10 +161,11 @@ export function HeaderSection({ section, theme, ctx }: Props) {
                   style={{
                     fontSize: theme.baseFontSize - 1,
                     color: '#666',
+                    direction: isRTL ? 'rtl' : 'ltr',
                     ...resolveComponentStyle(section.style.addressStyle, theme),
                   }}
                 >
-                  {school.address}
+                  {language === 'ar' && school.address ? school.address : school.address}
                 </div>
               )}
             </div>

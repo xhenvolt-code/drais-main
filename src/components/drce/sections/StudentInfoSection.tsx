@@ -13,6 +13,7 @@ import {
   resolveStudentInfoValueStyle,
 } from '@/lib/drce/styleResolver';
 import { resolveBinding } from '@/lib/drce/bindingResolver';
+import { t } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCEStudentInfoSection;
@@ -59,7 +60,7 @@ function InlineBarcode({
       viewBox={`0 0 ${totalW} ${totalHeight}`}
       preserveAspectRatio="xMidYMin meet"
       style={{ display: 'block', margin: '0 auto', border: '0.5px solid #111', background: '#fff' }}
-      aria-label={`Barcode ${labelText}`}
+      aria-label={`${t('barcode', ctx.language)} ${labelText}`}
     >
       {bars}
       <text
@@ -78,14 +79,16 @@ function InlineBarcode({
 export function StudentInfoSection({ section, ctx }: Props) {
   if (!section.visible) return null;
   const { style } = section;
+  const language = ctx.language ?? 'en';
+  const isRTL = language === 'ar';
 
   // Guard against null student data
   const student = ctx.student || {};
 
   // Strip outer box border — we don't want a border around the whole student section
-  const boxStyle    = { ...resolveStudentInfoBoxStyle(style), border: 'none' };
-  const labelStyle  = resolveStudentInfoLabelStyle(style);
-  const valueStyle  = resolveStudentInfoValueStyle(style);
+  const boxStyle    = { ...resolveStudentInfoBoxStyle(style), border: 'none', direction: isRTL ? 'rtl' : 'ltr' };
+  const labelStyle  = { ...resolveStudentInfoLabelStyle(style), textAlign: isRTL ? 'right' : 'left' };
+  const valueStyle  = { ...resolveStudentInfoValueStyle(style), textAlign: isRTL ? 'right' : 'left' };
 
   const showBarcode     = style.showBarcode     !== false;
   const showPhoto       = style.showPhoto       !== false;
@@ -98,9 +101,17 @@ export function StudentInfoSection({ section, ctx }: Props) {
   // Cell width adjusts to barcode width with some padding
   const barcodeCellWidth = barcodeWidth + 2;
 
+  // Map field labels through translation system
   const visibleFields = [...(section.fields || [])]
     .filter(f => f.visible)
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => a.order - b.order)
+    .map(f => ({
+      ...f,
+      // Translate label if it's a known key
+      label: (t(f.label as any, language) !== f.label) 
+        ? t(f.label as any, language)
+        : f.label, // Fallback to original if not in dictionary
+    }));
 
   const row1 = visibleFields.slice(0, fieldsPerRow);
   const row2 = visibleFields.slice(fieldsPerRow);
@@ -124,7 +135,7 @@ export function StudentInfoSection({ section, ctx }: Props) {
 
   return (
     <div style={boxStyle}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', direction: isRTL ? 'rtl' : 'ltr' }}>
         <tbody>
           <tr>
             {/* ── Barcode column ────────────────────────────────── */}
@@ -134,6 +145,7 @@ export function StudentInfoSection({ section, ctx }: Props) {
                 textAlign: 'center',
                 verticalAlign: 'middle',
                 padding: '0 1px 0 0',
+                order: isRTL ? 999 : 'auto',
               }}>
                  {/* Barcode + student number grouped so they rotate together */}
                  <div style={{
