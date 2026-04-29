@@ -127,6 +127,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN academic_years ay2 ON t.academic_year_id = ay2.id
       LEFT JOIN enrollments e ON e.student_id = cr.student_id AND e.class_id = cr.class_id AND (e.term_id = cr.term_id OR cr.term_id IS NULL)
       LEFT JOIN streams st ON st.id = e.stream_id
+      LEFT JOIN class_subjects cs ON cr.class_id = cs.class_id AND cr.subject_id = cs.subject_id
       ${where}
       ORDER BY p.last_name ASC, p.first_name ASC, cr.id DESC
       `,

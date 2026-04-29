@@ -83,6 +83,7 @@ export async function GET(req: NextRequest) {
         AND (e.academic_year_id = COALESCE(cr.academic_year_id, t.academic_year_id) OR e.academic_year_id IS NULL)
       LEFT JOIN streams st ON e.stream_id = st.id
       LEFT JOIN exams ex ON ex.term_id = cr.term_id AND ex.class_id = cr.class_id AND ex.subject_id = cr.subject_id
+      LEFT JOIN class_subjects cs ON cr.class_id = cs.class_id AND cr.subject_id = cs.subject_id
       ${where}
       ORDER BY p.last_name, p.first_name, sub.name, rt.name
     `, params);

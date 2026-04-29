@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { t } from '@/lib/i18n';
-import { Search, ChevronLeft, ChevronRight, RefreshCw, Loader2, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, RefreshCw, Loader2, Plus, Edit2, Trash2, Settings } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -19,6 +19,17 @@ interface Subject {
   code?: string;
   subject_type?: string;
   academic_type?: string;
+}
+
+interface ClassOption {
+  id: number;
+  name: string;
+  class_level?: string;
+}
+
+interface AllocationData {
+  allocations: any[];
+  allClasses: ClassOption[];
 }
 
 export const SubjectsManager: React.FC = () => {
@@ -40,7 +51,98 @@ export const SubjectsManager: React.FC = () => {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
+  // Allocation modal state
+  const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
+  const [allocationSubjectId, setAllocationSubjectId] = useState<number | null>(null);
+  const [allocationSubjectName, setAllocationSubjectName] = useState('');
+  const [allocationLoading, setAllocationLoading] = useState(false);
+  const [allocationSubmitting, setAllocationSubmitting] = useState(false);
+  const [allClasses, setAllClasses] = useState<ClassOption[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<Set<number>>(new Set());
+  
   const perPage = 10;
+
+  // Load subject allocations
+  const loadAllocations = async (subjectId: number) => {
+    setAllocationLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/class-subjects?subject_id=${subjectId}`);
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setAllClasses(result.data.allClasses || []);
+        
+        // Mark which classes already have this subject
+        const allocatedClassIds = new Set(
+          (result.data.allocations || []).map((a: any) => a.class_id)
+        );
+        setSelectedClasses(allocatedClassIds);
+      } else {
+        toast.error(result.error || 'Failed to load class options');
+      }
+    } catch (error) {
+      console.error('Error loading allocations:', error);
+      toast.error('Network error: Failed to load class options');
+    } finally {
+      setAllocationLoading(false);
+    }
+  };
+
+  // Open allocation modal
+  const openAllocationModal = (subject: Subject) => {
+    if (!subject || !subject.id) {
+      toast.error('Invalid subject data');
+      return;
+    }
+    
+    setAllocationSubjectId(subject.id);
+    setAllocationSubjectName(subject.name);
+    setSelectedClasses(new Set());
+    setIsAllocationModalOpen(true);
+    loadAllocations(subject.id);
+  };
+
+  // Toggle class selection
+  const toggleClassSelection = (classId: number) => {
+    const newSelected = new Set(selectedClasses);
+    if (newSelected.has(classId)) {
+      newSelected.delete(classId);
+    } else {
+      newSelected.add(classId);
+    }
+    setSelectedClasses(newSelected);
+  };
+
+  // Save allocations
+  const saveAllocations = async () => {
+    if (!allocationSubjectId) return;
+
+    setAllocationSubmitting(true);
+    try {
+      const response = await fetch(`${API_BASE}/class-subjects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject_id: allocationSubjectId,
+          class_ids: Array.from(selectedClasses),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success(result.message || 'Allocations updated successfully');
+        setIsAllocationModalOpen(false);
+      } else {
+        toast.error(result.error || 'Failed to save allocations');
+      }
+    } catch (error) {
+      console.error('Error saving allocations:', error);
+      toast.error('Network error: Failed to save allocations');
+    } finally {
+      setAllocationSubmitting(false);
+    }
+  };
 
   // Load subjects from API with enhanced error handling
   const load = async () => {
@@ -437,6 +539,13 @@ export const SubjectsManager: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-2">
                       <button
+                        onClick={() => openAllocationModal(item)}
+                        className="p-2 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900 rounded-lg transition-colors"
+                        title="Manage Class Allocations"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => openEditModal(item)}
                         className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
                         title="Edit Subject"
@@ -662,6 +771,127 @@ export const SubjectsManager: React.FC = () => {
                       </button>
                     </div>
                   </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Subject Allocation Modal */}
+      <Transition appear show={isAllocationModalOpen} as={React.Fragment}>
+        <Dialog as="div" className="relative z-[9999]" onClose={() => setIsAllocationModalOpen(false)}>
+          <Transition.Child
+            as={React.Fragment}
+            enter="ease-out duration-500"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-300"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gradient-to-br from-black/20 via-slate-900/30 to-black/40 backdrop-blur-md backdrop-saturate-150" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-full p-4">
+              <Transition.Child
+                as={React.Fragment}
+                enter="ease-out duration-500"
+                enterFrom="opacity-0 scale-90 translate-y-8"
+                enterTo="opacity-100 scale-100 translate-y-0"
+                leave="ease-in duration-300"
+                leaveFrom="opacity-100 scale-100 translate-y-0"
+                leaveTo="opacity-0 scale-90 translate-y-8"
+              >
+                <Dialog.Panel className="w-full max-w-2xl p-8 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl backdrop-saturate-150 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30 max-h-[80vh] overflow-y-auto">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <Dialog.Title className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Manage Subject Scope
+                      </Dialog.Title>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        <strong>{allocationSubjectName}</strong> — Select which classes this subject is taught in
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setIsAllocationModalOpen(false)}
+                      disabled={allocationSubmitting}
+                      className="p-3 rounded-full hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200 backdrop-blur-sm disabled:opacity-50"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+
+                  {allocationLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-2" />
+                      <span className="text-gray-600 dark:text-gray-400">Loading classes...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3 mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {allClasses.length > 0 ? (
+                            allClasses.map((cls) => (
+                              <label
+                                key={cls.id}
+                                className="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-all"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedClasses.has(cls.id)}
+                                  onChange={() => toggleClassSelection(cls.id)}
+                                  disabled={allocationSubmitting}
+                                  className="w-5 h-5 rounded-lg text-purple-600 cursor-pointer disabled:opacity-50"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-900 dark:text-gray-100">
+                                    {cls.name}
+                                  </div>
+                                  {cls.class_level && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      Level: {cls.class_level}
+                                    </div>
+                                  )}
+                                </div>
+                              </label>
+                            ))
+                          ) : (
+                            <div className="col-span-2 text-center py-8 text-gray-500 dark:text-gray-400">
+                              No classes available
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          <strong>Scope Definition:</strong> When a subject is marked for specific classes, it will only appear on reports for students in those classes. This prevents learners from seeing results for subjects they don't take.
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <button 
+                          type="button"
+                          onClick={() => setIsAllocationModalOpen(false)}
+                          disabled={allocationSubmitting}
+                          className="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-xl transition-all duration-200 backdrop-blur-sm disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={saveAllocations}
+                          disabled={allocationSubmitting}
+                          className="px-8 py-3 bg-gradient-to-r from-purple-500/90 to-pink-600/90 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] backdrop-blur-sm disabled:opacity-50 disabled:transform-none disabled:hover:shadow-lg flex items-center gap-2"
+                        >
+                          {allocationSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                          {allocationSubmitting ? 'Saving...' : `Save Allocation (${selectedClasses.size})`}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </Dialog.Panel>
               </Transition.Child>
             </div>

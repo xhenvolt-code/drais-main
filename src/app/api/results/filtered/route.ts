@@ -149,6 +149,7 @@ export async function GET(req: NextRequest) {
         AND ex.class_id = cr.class_id 
         AND ex.subject_id = cr.subject_id
       LEFT JOIN result_types rt ON cr.result_type_id = rt.id
+      LEFT JOIN class_subjects cs ON cr.class_id = cs.class_id AND cr.subject_id = cs.subject_id
       ${whereClause}
       ORDER BY p.last_name, p.first_name, sub.name
     `, [schoolId, ...params]);
