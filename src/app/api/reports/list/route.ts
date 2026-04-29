@@ -55,13 +55,8 @@ export async function GET(req: NextRequest) {
       const like = `%${query}%`;
       params.push(like, like, like, like);
     }
-    // Phase 2: server-side curriculum filter
-    if (curriculum === 'secular') {
-      where += ' AND LOWER(COALESCE(sub.subject_type, \'\')) = \'secular\'';
-    } else if (curriculum === 'theology') {
-      where += ' AND LOWER(COALESCE(sub.subject_type, \'\')) = \'theology\'';
-    }
-    // curriculum === 'all' → no filter
+    // Curriculum filtering moved to frontend - API returns all data
+    // No server-side curriculum filtering to allow flexible frontend filtering
 
     const [rows]: any = await connection.execute(
       `
