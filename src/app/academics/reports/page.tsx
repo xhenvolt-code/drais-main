@@ -1308,11 +1308,15 @@ const ReportsPage = () => {
                   ? (Array.isArray(student.results) ? student.results : []).filter((r: Result) => {
                       if (!r) return false;
                       const type = (r.subject_type || '').toLowerCase();
+                      const name = (r.subject_name || '').toLowerCase();
                       if (curriculum === 'secular') {
-                        return type === 'secular' || (!type.includes('theol') && !type.includes('islam') && !type.includes('religion') && type !== 'theology');
+                        return type === 'secular' ||
+                               (!type.includes('theol') && !type.includes('islam') && !type.includes('religion') && type !== 'theology' &&
+                                !name.includes('islam') && !name.includes('religion') && !name.includes('quran') && !name.includes('arabic'));
                       }
                       if (curriculum === 'theology') {
-                        return type === 'theology' || type.includes('theol') || type.includes('islam') || type.includes('religion');
+                        return type === 'theology' || type.includes('theol') || type.includes('islam') || type.includes('religion') ||
+                               name.includes('islam') || name.includes('religion') || name.includes('quran') || name.includes('arabic');
                       }
                       return true;
                     })
