@@ -260,6 +260,7 @@ function SubjectTable({
             <th style={{ ...thStyle, textAlign: 'center' }}>
               {isEndOfTerm ? 'EOT' : 'SCORE'}
             </th>
+            {isEndOfTerm && <th style={{ ...thStyle, textAlign: 'center' }}>AVG</th>}
           </tr>
         </thead>
         <tbody>
@@ -276,20 +277,30 @@ function SubjectTable({
             subjects.map((r, i) => {
               const score = getDisplayScore(r, isEndOfTerm, enableMarkConversion);
               const mtDisplay = r.midTermScore !== null ? Math.round(r.midTermScore) : '-';
+              const aveDisplay = isEndOfTerm && score !== '-' ? Math.round((mtDisplay !== '-' ? parseInt(String(mtDisplay)) : 0 + (score !== '-' ? parseInt(String(score)) : 0)) / 2) : '-';
               return (
                 <tr key={i}>
                   <td style={subjectTdStyle}>{getSubjectName(r, lang)}</td>
                   {isEndOfTerm && <td style={tdStyle}>{mtDisplay}</td>}
                   <td style={tdStyle}>{score}</td>
+                  {isEndOfTerm && <td style={tdStyle}>{aveDisplay}</td>}
                 </tr>
               );
             })
-          )}
+          )}}
           {/* Totals row */}
-          <tr style={{ fontWeight: 'bold' }}>
+          <tr style={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>
             <td style={subjectTdStyle}>{isRtl ? 'المجموع' : 'TOTAL'}</td>
             {isEndOfTerm && <td style={tdStyle}>{Math.round(totalMT)}</td>}
             <td style={tdStyle}>{Math.round(totalScore)}</td>
+            {isEndOfTerm && <td style={tdStyle}>{Math.round((totalMT + totalScore) / 2)}</td>}
+          </tr>
+          {/* Average row */}
+          <tr style={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+            <td style={subjectTdStyle}>{isRtl ? 'المتوسط' : 'AVERAGE'}</td>
+            {isEndOfTerm && <td style={tdStyle}>{subjects.length > 0 ? Math.round(totalMT / subjects.length) : 0}</td>}
+            <td style={tdStyle}>{subjects.length > 0 ? Math.round(totalScore / subjects.length) : 0}</td>
+            {isEndOfTerm && <td style={tdStyle}>{subjects.length > 0 ? Math.round((totalMT + totalScore) / 4) : 0}</td>}
           </tr>
         </tbody>
       </table>

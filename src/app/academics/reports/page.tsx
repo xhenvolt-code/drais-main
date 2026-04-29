@@ -1710,15 +1710,43 @@ const ReportsPage = () => {
                             </tr>
                           );
                         })}
-                        <tr style={{ fontWeight: 'bold' }}>
-                          <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign }}>TOTAL MARKS:</td>
-                          <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{Math.round(allGroupedResults.reduce((sum, r) => sum + (r.midTermScore || 0), 0))}</td>
-                          {isEndOfTerm && <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{Math.round(allGroupedResults.reduce((sum, r) => sum + (r.endTermScore || 0), 0))}</td>}
-                          <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding }}></td>
-                          <td colSpan={2} style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, cursor: 'text' }} contentEditable suppressContentEditableWarning>
-                            AVERAGE: {allGroupedResults.length > 0 ? Math.round(totalMarks / allGroupedResults.length) : 0}
-                          </td>
-                        </tr>
+                        {/* Calculate totals using calculateMarks for consistency */}
+                        {(() => {
+                          const totalMidTerm = allGroupedResults.reduce((sum, r) => {
+                            const { midTermMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                            return sum + midTermMarks;
+                          }, 0);
+                          const totalEndTerm = allGroupedResults.reduce((sum, r) => {
+                            const { endTermMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                            return sum + endTermMarks;
+                          }, 0);
+                          const totalScore = allGroupedResults.reduce((sum, r) => {
+                            const { totalMarks } = calculateMarks(r, isEndOfTerm, enableMarkConversion);
+                            return sum + totalMarks;
+                          }, 0);
+                          const averageScore = allGroupedResults.length > 0 ? Math.round(totalScore / allGroupedResults.length) : 0;
+                          
+                          return (
+                            <>
+                              <tr style={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign }}>TOTAL</td>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{Math.round(totalMidTerm)}</td>
+                                {isEndOfTerm && <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{Math.round(totalEndTerm)}</td>}
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding }}></td>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding }}></td>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding }}></td>
+                              </tr>
+                              <tr style={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: activeLayout.table.td.textAlign }}>AVERAGE</td>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{allGroupedResults.length > 0 ? Math.round(totalMidTerm / allGroupedResults.length) : 0}</td>
+                                {isEndOfTerm && <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{allGroupedResults.length > 0 ? Math.round(totalEndTerm / allGroupedResults.length) : 0}</td>}
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding, textAlign: 'center', cursor: 'text' }} contentEditable suppressContentEditableWarning>{averageScore}</td>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding }}></td>
+                                <td style={{ border: activeLayout.table.td.border, padding: activeLayout.table.td.padding }}></td>
+                              </tr>
+                            </>
+                          );
+                        })()}
                       </tbody>
                     </table>
                     
