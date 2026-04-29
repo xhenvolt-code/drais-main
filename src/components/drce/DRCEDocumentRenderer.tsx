@@ -39,6 +39,11 @@ function renderSection(
   dataCtx: DRCEDataContext,
   renderCtx: DRCERenderContext,
 ) {
+  if (!section || !doc || !dataCtx || !renderCtx) {
+    console.warn('[renderSection] Missing required context:', { section: !!section, doc: !!doc, dataCtx: !!dataCtx, renderCtx: !!renderCtx });
+    return null;
+  }
+  
   const { theme } = doc;
   // Enhanced contexts with language support
   const enhancedDataCtx = { ...dataCtx, language: renderCtx.language };
@@ -116,6 +121,20 @@ export function DRCEDocumentRenderer({
   onSectionClick,
   selectedSectionId,
 }: Props) {
+  // Defensive guards against undefined contexts
+  if (!document) {
+    console.error('[DRCEDocumentRenderer] document is required but not provided');
+    return null;
+  }
+  if (!dataCtx) {
+    console.error('[DRCEDocumentRenderer] dataCtx is required but not provided');
+    return null;
+  }
+  if (!renderCtx) {
+    console.error('[DRCEDocumentRenderer] renderCtx is required but not provided');
+    return null;
+  }
+  
   const { theme, watermark, sections } = document;
   const pageStyle = resolvePageStyle(theme);
   const { width, minHeight } = resolvePageDimensions(theme);
