@@ -245,13 +245,9 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
                   if (totalsConfig?.showTotalObtained !== false) {
                     cellContent = totalObtained.toFixed(1);
                   }
-                } else {
-                  // Default fallback: show total obtained in any remaining column that might contain scores
-                  // This prevents totals from disappearing entirely
-                  if (totalsConfig?.showTotalObtained !== false) {
-                    cellContent = totalObtained.toFixed(1);
-                  }
                 }
+                // No fallback - only show totals in specifically identified columns
+                // This prevents duplication across all columns
               }
 
               return (
