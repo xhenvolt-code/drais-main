@@ -240,8 +240,18 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
                   if (totalsConfig?.showTotalPossible) {
                     cellContent = totalPossible.toFixed(1);
                   }
+                } else if (header.includes('total') || header.includes('grade') || header.includes('points')) {
+                  // Show total obtained in total/grade/points columns (common score columns)
+                  if (totalsConfig?.showTotalObtained !== false) {
+                    cellContent = totalObtained.toFixed(1);
+                  }
+                } else {
+                  // Default fallback: show total obtained in any remaining column that might contain scores
+                  // This prevents totals from disappearing entirely
+                  if (totalsConfig?.showTotalObtained !== false) {
+                    cellContent = totalObtained.toFixed(1);
+                  }
                 }
-                // For other columns, leave empty (no default total display)
               }
 
               return (
