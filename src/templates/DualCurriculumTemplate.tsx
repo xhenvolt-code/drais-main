@@ -287,7 +287,7 @@ function SubjectTable({
                 </tr>
               );
             })
-          )}}
+          )}
           {/* Totals row */}
           <tr style={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>
             <td style={subjectTdStyle}>{isRtl ? 'المجموع' : 'TOTAL'}</td>
