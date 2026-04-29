@@ -6,7 +6,6 @@ import Image from 'next/image';
 import type { DRCEHeaderSection, DRCETheme, DRCEHeaderComponentStyle } from '@/lib/drce/schema';
 import { resolveHeaderStyle } from '@/lib/drce/styleResolver';
 import type { DRCERenderContext } from '../types';
-import { t } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCEHeaderSection;
@@ -75,7 +74,7 @@ export function HeaderSection({ section, theme, ctx }: Props) {
     school.logo_url ? (
       <Image
         src={school.logo_url}
-        alt={t('schoolLogo', language)}
+        alt="School Logo"
         width={section.style.logoWidth ?? 64}
         height={section.style.logoHeight ?? 64}
         style={{

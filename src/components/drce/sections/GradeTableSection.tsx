@@ -4,7 +4,6 @@
 import React from 'react';
 import type { DRCEGradeTableSection, DRCETheme, DRCEDataContext } from '@/lib/drce/schema';
 import { resolveGradeTableHeaderCellStyle, resolveGradeTableDataCellStyle } from '@/lib/drce/styleResolver';
-import { t } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCEGradeTableSection;
@@ -38,8 +37,8 @@ export function GradeTableSection({ section, theme, ctx }: Props) {
   // Only GRADE and SCORE RANGE rows — no REMARKS row
   let rows: string[][] = grades
     ? [
-        [t('grade', language), ...grades.map(g => g.label)],
-        [t('scoreRange', language), ...grades.map(g => `${g.min}${g.min === g.max ? '' : `–${g.max}`}`)],
+        ['GRADE', ...grades.map(g => g.label)],
+        ['SCORE RANGE', ...grades.map(g => `${g.min}${g.min === g.max ? '' : `–${g.max}`}`)],
       ]
     : (language === 'ar' ? DEFAULT_ROWS_AR : DEFAULT_ROWS_EN);
 

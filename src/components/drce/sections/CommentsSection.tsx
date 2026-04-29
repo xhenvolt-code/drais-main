@@ -5,7 +5,6 @@ import React from 'react';
 import type { DRCECommentsSection, DRCETheme, DRCEDataContext } from '@/lib/drce/schema';
 import { resolveCommentRibbonStyle, resolveCommentTextStyle } from '@/lib/drce/styleResolver';
 import { resolveBinding } from '@/lib/drce/bindingResolver';
-import { t } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCECommentsSection;
@@ -79,15 +78,10 @@ export function CommentsSection({ section, theme, ctx }: Props) {
       {visibleItems.map(item => {
         const value = resolveBinding(item.binding, ctx);
         
-        // Translate label if it's a known key
-        const translatedLabel = (t(item.label as any, language) !== item.label) 
-          ? t(item.label as any, language)
-          : item.label; // Fallback to original if not in dictionary
-        
         return (
           <div key={item.id} style={{ ...ribbonStyle, marginBottom: 3 }}>
             <ArrowLabel
-              label={translatedLabel}
+              label={item.label}
               bg={style.ribbonBackground ?? theme.accentColor}
               color={style.ribbonColor ?? '#000'}
               fontSize={style.ribbonFontSize ?? 10}

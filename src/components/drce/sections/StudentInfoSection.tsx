@@ -13,7 +13,6 @@ import {
   resolveStudentInfoValueStyle,
 } from '@/lib/drce/styleResolver';
 import { resolveBinding } from '@/lib/drce/bindingResolver';
-import { t } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCEStudentInfoSection;
@@ -60,7 +59,7 @@ function InlineBarcode({
       viewBox={`0 0 ${totalW} ${totalHeight}`}
       preserveAspectRatio="xMidYMin meet"
       style={{ display: 'block', margin: '0 auto', border: '0.5px solid #111', background: '#fff' }}
-      aria-label={`${t('barcode', ctx.language)} ${labelText}`}
+      aria-label={`Barcode ${labelText}`}
     >
       {bars}
       <text
@@ -108,9 +107,7 @@ export function StudentInfoSection({ section, ctx }: Props) {
     .map(f => ({
       ...f,
       // Translate label if it's a known key
-      label: (t(f.label as any, language) !== f.label) 
-        ? t(f.label as any, language)
-        : f.label, // Fallback to original if not in dictionary
+      label: f.label, // Fallback to original if not in dictionary
     }));
 
   const row1 = visibleFields.slice(0, fieldsPerRow);

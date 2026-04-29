@@ -9,7 +9,6 @@ import {
   resolveTableDataCellStyle,
 } from '@/lib/drce/styleResolver';
 import { resolveBinding } from '@/lib/drce/bindingResolver';
-import { t, translateSubject } from '@/lib/drce/reportTranslations';
 
 interface Props {
   section: DRCEResultsTableSection;
@@ -137,21 +136,14 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
       </colgroup>
       <thead>
         <tr>
-          {visibleCols.map(col => {
-            // Translate column header if it's a known key
-            const headerText = (t(col.header as any, language) !== col.header) 
-              ? t(col.header as any, language)
-              : col.header; // Fallback to original if not in dictionary
-            
-            return (
-              <th
-                key={col.id}
-                style={resolveTableHeaderCellStyle(style, col.align, col.style)}
-              >
-                {headerText}
-              </th>
-            );
-          })}
+          {visibleCols.map(col => (
+            <th
+              key={col.id}
+              style={resolveTableHeaderCellStyle(style, col.align, col.style)}
+            >
+              {col.header}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
