@@ -397,18 +397,20 @@ export interface DRCERibbonSection extends DRCESectionBase {
 export interface DRCEResultsTableTotalsConfig {
   /** Whether to show a totals row at the end of the table */
   enabled: boolean;
-  /** Column ID to use as the label for the totals row (e.g., 'subject_name' column displays "TOTALS") */
-  labelColumnId: string;
-  /** Label text to display in the label column */
+  /** Label text to display in the first column */
   labelText: string;
-  /** Column IDs to sum up (numeric columns) */
-  sumColumnIds: string[];
-  /** Whether to show an average row after totals */
+  /** Whether to show total marks obtained */
+  showTotalObtained: boolean;
+  /** Whether to show total possible marks */
+  showTotalPossible: boolean;
+  /** Whether to show percentage */
+  showPercentage: boolean;
+  /** Whether to show average */
   showAverage: boolean;
-  /** Column ID for the average label row */
-  averageLabelColumnId?: string;
-  /** Average label text */
-  averageLabelText?: string;
+  /** Whether to show grand grade */
+  showGrandGrade: boolean;
+  /** Column IDs to sum up for obtained marks (numeric columns) */
+  sumColumnIds: string[];
   /** Style for the totals row */
   rowStyle?: DRCEColumnStyle;
 }
@@ -547,6 +549,15 @@ export type DRCEMutation =
 
 // ─── Data Context (passed to renderer at print/preview time) ─────────────────
 
+export interface DRCESubject {
+  id: number;
+  name: string;
+  /** Configurable total marks for this subject (default 100) */
+  totalMarks: number;
+  /** 'primary' = core subject, 'secondary' = non-core/elective */
+  subjectType?: 'primary' | 'secondary';
+}
+
 export interface DRCEResultRow {
   subjectName: string;
   midTermScore: number | null;
@@ -558,6 +569,8 @@ export interface DRCEResultRow {
   teacherName: string;
   /** 'primary' = core subject, 'secondary' = non-core/elective (default 'primary') */
   subjectType?: 'primary' | 'secondary';
+  /** Subject configuration including total marks */
+  subject?: DRCESubject;
 }
 
 export interface DRCEAssessmentData {
@@ -608,6 +621,7 @@ export type Language = 'en' | 'ar';
 export interface DRCEDataContext {
   student: DRCEStudentData;
   results: DRCEResultRow[];
+  subjects: DRCESubject[];
   assessment: DRCEAssessmentData;
   comments: DRCECommentsData;
   meta: DRCEMetaContext;

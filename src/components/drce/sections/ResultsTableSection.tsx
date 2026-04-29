@@ -104,9 +104,29 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
 
   const totalsConfig = section.totalsConfig;
   const totalsEnabled = totalsConfig?.enabled ?? true;  // Default to TRUE - always show totals
-  const sumColumnIds = totalsConfig?.sumColumnIds ?? visibleCols.filter(c => c.id.toLowerCase().includes('total') || c.id.toLowerCase().includes('score')).map(c => c.id) ?? [];
+  const sumColumnIds = totalsConfig?.sumColumnIds ?? visibleCols.filter(c => c.id.toLowerCase().includes('score') || c.id.toLowerCase().includes('total')).map(c => c.id) ?? [];
   const totals = calculateTotals(results, sumColumnIds, ctx);
   const averages = totalsConfig?.showAverage !== false ? calculateAverages(results, sumColumnIds, ctx) : {};
+
+  // Calculate grand totals for the summary row
+  const totalObtained = Object.values(totals).reduce((sum, val) => sum + val, 0);
+  const totalPossible = results.reduce((sum, result) => {
+    const subject = ctx.subjects?.find(s => s.name === result.subjectName);
+    return sum + (subject?.totalMarks ?? 100);
+  }, 0);
+  const percentage = totalPossible > 0 ? (totalObtained / totalPossible) * 100 : 0;
+
+  // Validate subject totals
+  const validationErrors: string[] = [];
+  results.forEach((result, index) => {
+    const subject = ctx.subjects?.find(s => s.name === result.subjectName);
+    const subjectTotal = subject?.totalMarks ?? 100;
+    const obtained = result.total ?? 0;
+
+    if (obtained > subjectTotal) {
+      validationErrors.push(`Row ${index + 1} (${result.subjectName}): ${obtained} exceeds subject total ${subjectTotal}`);
+    }
+  });
 
   const handleCellBlur = async (
     e: React.FocusEvent<HTMLTableCellElement>,
@@ -175,69 +195,60 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
           </tr>
         ))}
         
-        {/* Totals Row - Always shown */}
-        <tr style={{ fontWeight: 'bold', backgroundColor: 'rgba(0, 0, 0, 0.05)', pageBreakInside: 'avoid' }}>
-          {visibleCols.map((col, idx) => {
-            const isTotalCol = sumColumnIds.length > 0 ? sumColumnIds.includes(col.id) : !col.id.toLowerCase().includes('subject') && !col.id.toLowerCase().includes('name');
-            const isFirstCol = idx === 0;
-            let cellContent: React.ReactNode = '';
+        {/* Grand Total Row */}
+        {totalsEnabled && (
+          <tr style={{
+            fontWeight: 'bold',
+            backgroundColor: 'rgba(0, 0, 0, 0.08)',
+            borderTop: '2px solid #000',
+            pageBreakInside: 'avoid'
+          }}>
+            {visibleCols.map((col, idx) => {
+              const isFirstCol = idx === 0;
+              let cellContent: React.ReactNode = '';
 
-            if (isFirstCol && sumColumnIds.length === 0) {
-              // If no config, use first column as label
-              cellContent = totalsConfig?.labelText ?? 'TOTAL';
-            } else if (isTotalCol) {
-              const total = totals[col.id];
-              cellContent = total !== undefined && total !== null 
-                ? (typeof total === 'number' && total % 1 !== 0 ? total.toFixed(2) : total)
-                : '';
-            }
+              if (isFirstCol) {
+                cellContent = totalsConfig?.labelText ?? 'TOTAL';
+              } else if (col.id.toLowerCase().includes('score') || col.id.toLowerCase().includes('total')) {
+                // Show total obtained in score columns
+                if (totalsConfig?.showTotalObtained !== false) {
+                  cellContent = totalObtained;
+                }
+              } else if (col.id.toLowerCase().includes('subject')) {
+                // Show total possible in subject column if configured
+                if (totalsConfig?.showTotalPossible) {
+                  cellContent = totalPossible;
+                }
+              } else if (col.header.toLowerCase().includes('percentage') || col.header.toLowerCase().includes('%')) {
+                // Show percentage in percentage columns
+                if (totalsConfig?.showPercentage !== false) {
+                  cellContent = `${percentage.toFixed(1)}%`;
+                }
+              } else if (col.header.toLowerCase().includes('average')) {
+                // Show average in average columns
+                if (totalsConfig?.showAverage) {
+                  cellContent = (totalObtained / results.length).toFixed(1);
+                }
+              }
 
-            return (
-              <td
-                key={col.id}
-                style={{
-                  ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
-                  fontWeight: 'bold',
-                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                }}
-              >
-                {cellContent}
-              </td>
-            );
-          })}
-        </tr>
-
-        {/* Average Row - Always shown */}
-        <tr style={{ fontStyle: 'italic', backgroundColor: 'rgba(0, 0, 0, 0.02)', pageBreakInside: 'avoid' }}>
-          {visibleCols.map((col, idx) => {
-            const isAverageCol = sumColumnIds.length > 0 ? sumColumnIds.includes(col.id) : !col.id.toLowerCase().includes('subject') && !col.id.toLowerCase().includes('name');
-            const isFirstCol = idx === 0;
-            let cellContent: React.ReactNode = '';
-
-            if (isFirstCol && sumColumnIds.length === 0) {
-              // If no config, use first column as label
-              cellContent = totalsConfig?.averageLabelText ?? 'AVERAGE';
-            } else if (isAverageCol) {
-              const average = averages[col.id];
-              cellContent = average !== undefined && average !== null 
-                ? (typeof average === 'number' && average % 1 !== 0 ? average.toFixed(2) : average)
-                : '';
-            }
-
-            return (
-              <td
-                key={col.id}
-                style={{
-                  ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
-                  fontStyle: 'italic',
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                }}
-              >
-                {cellContent}
-              </td>
-            );
-          })}
-        </tr>
+              return (
+                <td
+                  key={col.id}
+                  colSpan={isFirstCol && totalsConfig?.showTotalPossible ? 2 : 1}
+                  style={{
+                    ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
+                    fontWeight: 'bold',
+                    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                    borderTop: '2px solid #000',
+                    padding: '8px',
+                  }}
+                >
+                  {cellContent}
+                </td>
+              );
+            })}
+          </tr>
+        )}
       </tbody>
     </table>
   );

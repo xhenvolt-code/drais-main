@@ -21,6 +21,7 @@ export function resolveBinding(
   // Merge result row as "result" scope if provided
   const root: Record<string, unknown> = {
     student:    context.student,
+    subjects:   context.subjects,
     assessment: context.assessment,
     comments:   context.comments,
     meta:       context.meta,
@@ -85,7 +86,8 @@ export const AVAILABLE_BINDINGS: Array<{ group: string; binding: string; label: 
   { group: 'Subject Result', binding: 'result.subjectName',   label: 'Subject Name' },
   { group: 'Subject Result', binding: 'result.midTermScore',  label: 'Mid-Term Score' },
   { group: 'Subject Result', binding: 'result.endTermScore',  label: 'End-Term Score' },
-  { group: 'Subject Result', binding: 'result.total',         label: 'Total Score' },
+  { group: 'Subject Result', binding: 'result.total',         label: 'Obtained Score' },
+  { group: 'Subject Result', binding: 'result.subject.totalMarks', label: 'Subject Total Marks' },
   { group: 'Subject Result', binding: 'result.grade',         label: 'Grade' },
   { group: 'Subject Result', binding: 'result.comment',       label: 'Comment' },
   { group: 'Subject Result', binding: 'result.initials',      label: 'Teacher Initials' },

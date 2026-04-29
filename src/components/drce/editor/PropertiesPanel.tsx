@@ -1014,6 +1014,45 @@ function ResultsTablePanel({ section, onMutate }: {
         <Row label="Font size"><NumberInput value={style.rowFontSize} onChange={v => set('rowFontSize', v)} min={7} max={18} /></Row>
         <Row label="Cell padding"><NumberInput value={style.padding} onChange={v => set('padding', v)} min={0} max={20} /></Row>
       </PanelSection>
+      <PanelSection title="Totals Configuration">
+        <Row label="Show totals row">
+          <input type="checkbox"
+            checked={section.totalsConfig?.enabled ?? true}
+            onChange={e => onMutate({ type: 'SET_SECTION_PROP', sectionId: section.id, path: 'totalsConfig.enabled', value: e.target.checked })}
+          />
+        </Row>
+        <Row label="Label text"><TextInput value={section.totalsConfig?.labelText ?? 'TOTAL'} onChange={v => onMutate({ type: 'SET_SECTION_PROP', sectionId: section.id, path: 'totalsConfig.labelText', value: v })} /></Row>
+        <Row label="Show total obtained">
+          <input type="checkbox"
+            checked={section.totalsConfig?.showTotalObtained ?? true}
+            onChange={e => onMutate({ type: 'SET_SECTION_PROP', sectionId: section.id, path: 'totalsConfig.showTotalObtained', value: e.target.checked })}
+          />
+        </Row>
+        <Row label="Show total possible">
+          <input type="checkbox"
+            checked={section.totalsConfig?.showTotalPossible ?? true}
+            onChange={e => onMutate({ type: 'SET_SECTION_PROP', sectionId: section.id, path: 'totalsConfig.showTotalPossible', value: e.target.checked })}
+          />
+        </Row>
+        <Row label="Show percentage">
+          <input type="checkbox"
+            checked={section.totalsConfig?.showPercentage ?? true}
+            onChange={e => onMutate({ type: 'SET_SECTION_PROP', sectionId: section.id, path: 'totalsConfig.showPercentage', value: e.target.checked })}
+          />
+        </Row>
+        <Row label="Show average">
+          <input type="checkbox"
+            checked={section.totalsConfig?.showAverage ?? false}
+            onChange={e => onMutate({ type: 'SET_SECTION_PROP', sectionId: section.id, path: 'totalsConfig.showAverage', value: e.target.checked })}
+          />
+        </Row>
+        <Row label="Show grand grade">
+          <input type="checkbox"
+            checked={section.totalsConfig?.showGrandGrade ?? false}
+            onChange={e => onMutate({ type: 'SET_SECTION_PROP', sectionId: section.id, path: 'totalsConfig.showGrandGrade', value: e.target.checked })}
+          />
+        </Row>
+      </PanelSection>
       <SpacingSection section={section} onMutate={onMutate} />
       <DeleteSectionBtn section={section} onMutate={onMutate} />
     </div>
