@@ -1167,7 +1167,10 @@ function NextTermBeginsPanel({ section, onMutate }: { section: DRCESection & { t
           <input
             type="date"
             value={content.customDate || ''}
-            onChange={e => setContent('customDate', e.target.value)}
+            onChange={e => {
+              const value = e.target.value || undefined; // Convert empty string to undefined
+              setContent('customDate', value);
+            }}
             className="w-full text-xs border border-gray-200 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-800"
             placeholder="Leave blank for auto-date"
           />

@@ -782,7 +782,7 @@ const ReportsPage = () => {
 
   // Helper function to check if student is in Nursery section
   function isNurseryStudent(className: string): boolean {
-    const nurseryKeywords = ['nursery', 'baby', 'kindergarten', 'pre', 'reception'];
+    const nurseryKeywords = ['nursery', 'baby', 'kindergarten', 'middle', 'top', 'pre', 'reception'];
     return nurseryKeywords.some(keyword => 
       className.toLowerCase().includes(keyword)
     );

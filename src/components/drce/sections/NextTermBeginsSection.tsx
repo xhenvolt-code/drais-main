@@ -8,11 +8,32 @@ export function NextTermBeginsSection({ section }: { section: DRCENextTermBegins
   if (!section.visible) return null;
 
   const style = section.style;
-  const dateText = section.content.customDate || new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+
+  // Format the custom date if provided, otherwise use auto-generated date
+  const dateText = section.content.customDate
+    ? (() => {
+        try {
+          // Parse YYYY-MM-DD format from date input
+          const date = new Date(section.content.customDate);
+          if (isNaN(date.getTime())) {
+            // Fallback if date parsing fails
+            return section.content.customDate;
+          }
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch (error) {
+          console.warn('Failed to parse custom date:', section.content.customDate);
+          return section.content.customDate; // Return as-is if parsing fails
+        }
+      })()
+    : new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
 
   const containerStyle: React.CSSProperties = {
     background: style.background || '#f0f0f0',
