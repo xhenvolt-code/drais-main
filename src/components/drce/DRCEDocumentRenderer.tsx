@@ -55,7 +55,9 @@ function renderSection(
     case 'spacer':       return <SpacerSection      key={section.id} section={section} />;
     case 'divider':      return <DividerSection     key={section.id} section={section} />;
     case 'next_term_begins': return <NextTermBeginsSection key={section.id} section={section} />;
-    default:             return null;
+    default:
+      console.warn(`Unknown section type: ${(section as any).type}`);
+      return null;
   }
 }
 
