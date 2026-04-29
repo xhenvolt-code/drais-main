@@ -109,7 +109,7 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
   const averages = totalsConfig?.showAverage !== false ? calculateAverages(results, sumColumnIds, ctx) : {};
 
   // Calculate grand totals for the summary row
-  const totalObtained = Object.values(totals).reduce((sum, val) => sum + val, 0);
+  const totalObtained = results.reduce((sum, result) => sum + (parseFloat(String(result.total || 0)) || 0), 0);
   const totalPossible = results.reduce((sum, result) => {
     const subject = ctx.subjects?.find(s => s.name === result.subjectName);
     return sum + (subject?.totalMarks ?? 100);
@@ -121,7 +121,7 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
   results.forEach((result, index) => {
     const subject = ctx.subjects?.find(s => s.name === result.subjectName);
     const subjectTotal = subject?.totalMarks ?? 100;
-    const obtained = result.total ?? 0;
+    const obtained = parseFloat(String(result.total || 0)) || 0;
 
     if (obtained > subjectTotal) {
       validationErrors.push(`Row ${index + 1} (${result.subjectName}): ${obtained} exceeds subject total ${subjectTotal}`);
