@@ -209,26 +209,12 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
               let cellContent: React.ReactNode = '';
 
               if (isFirstCol) {
-                // Show TOTAL and AVERAGE in the first column
-                let displayText = totalsConfig?.labelText ?? 'TOTAL';
-                if (totalsConfig?.showAverage) {
-                  displayText += ` ${totalObtained.toFixed(1)}`;
-                  if (results.length > 0) {
-                    displayText += `    AVERAGE: ${averageScore.toFixed(1)}`;
-                  }
-                } else {
-                  displayText += ` ${totalObtained.toFixed(1)}`;
-                }
-                cellContent = displayText;
-              } else if (col.id.toLowerCase().includes('score') || col.id.toLowerCase().includes('total')) {
-                // Show total obtained in score columns
+                // Show TOTAL label in the first column
+                cellContent = totalsConfig?.labelText ?? 'TOTAL';
+              } else if (col.header.toLowerCase().includes('score') || col.header.toLowerCase().includes('marks') || col.header.toLowerCase().includes('total')) {
+                // Show total obtained in score/marks columns
                 if (totalsConfig?.showTotalObtained !== false) {
-                  cellContent = totalObtained;
-                }
-              } else if (col.id.toLowerCase().includes('subject')) {
-                // Show total possible in subject column if configured
-                if (totalsConfig?.showTotalPossible) {
-                  cellContent = totalPossible;
+                  cellContent = totalObtained.toFixed(1);
                 }
               } else if (col.header.toLowerCase().includes('percentage') || col.header.toLowerCase().includes('%')) {
                 // Show percentage in percentage columns
@@ -240,6 +226,14 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
                 if (totalsConfig?.showAverage) {
                   cellContent = averageScore.toFixed(1);
                 }
+              } else if (col.header.toLowerCase().includes('subject') || col.header.toLowerCase().includes('name')) {
+                // Show total possible in subject/name column if configured
+                if (totalsConfig?.showTotalPossible) {
+                  cellContent = totalPossible.toFixed(1);
+                }
+              } else {
+                // For any other columns, show total obtained as default
+                cellContent = totalObtained.toFixed(1);
               }
 
               return (
