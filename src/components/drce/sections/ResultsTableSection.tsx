@@ -103,10 +103,10 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
       );
 
   const totalsConfig = section.totalsConfig;
-  const totalsEnabled = totalsConfig?.enabled ?? false;
-  const sumColumnIds = totalsConfig?.sumColumnIds ?? [];
-  const totals = totalsEnabled ? calculateTotals(results, sumColumnIds, ctx) : {};
-  const averages = totalsEnabled && totalsConfig?.showAverage ? calculateAverages(results, sumColumnIds, ctx) : {};
+  const totalsEnabled = totalsConfig?.enabled ?? true;  // Default to TRUE - always show totals
+  const sumColumnIds = totalsConfig?.sumColumnIds ?? visibleCols.filter(c => c.id.toLowerCase().includes('total') || c.id.toLowerCase().includes('score')).map(c => c.id) ?? [];
+  const totals = calculateTotals(results, sumColumnIds, ctx);
+  const averages = totalsConfig?.showAverage !== false ? calculateAverages(results, sumColumnIds, ctx) : {};
 
   const handleCellBlur = async (
     e: React.FocusEvent<HTMLTableCellElement>,
@@ -128,14 +128,17 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
   };
 
   return (
-    <table style={tableStyle}>
+    <table style={{
+      ...tableStyle,
+      pageBreakInside: 'avoid',
+    }}>
       <colgroup>
         {visibleCols.map(col => (
           <col key={col.id} style={{ width: col.width }} />
         ))}
       </colgroup>
-      <thead>
-        <tr>
+      <thead style={{ pageBreakInside: 'avoid', pageBreakAfter: 'avoid' }}>
+        <tr style={{ pageBreakInside: 'avoid' }}>
           {visibleCols.map(col => (
             <th
               key={col.id}
@@ -172,71 +175,69 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
           </tr>
         ))}
         
-        {/* Totals Row */}
-        {totalsEnabled && (
-          <tr style={{ fontWeight: 'bold', backgroundColor: 'rgba(0, 0, 0, 0.05)' }}>
-            {visibleCols.map(col => {
-              const isTotalCol = sumColumnIds.includes(col.id);
-              const isLabelCol = col.id === totalsConfig?.labelColumnId;
-              let cellContent: React.ReactNode = '';
+        {/* Totals Row - Always shown */}
+        <tr style={{ fontWeight: 'bold', backgroundColor: 'rgba(0, 0, 0, 0.05)', pageBreakInside: 'avoid' }}>
+          {visibleCols.map((col, idx) => {
+            const isTotalCol = sumColumnIds.length > 0 ? sumColumnIds.includes(col.id) : !col.id.toLowerCase().includes('subject') && !col.id.toLowerCase().includes('name');
+            const isFirstCol = idx === 0;
+            let cellContent: React.ReactNode = '';
 
-              if (isLabelCol) {
-                cellContent = totalsConfig?.labelText ?? 'TOTAL';
-              } else if (isTotalCol) {
-                const total = totals[col.id];
-                cellContent = total !== undefined && total !== null 
-                  ? (typeof total === 'number' && total % 1 !== 0 ? total.toFixed(2) : total)
-                  : '';
-              }
+            if (isFirstCol && sumColumnIds.length === 0) {
+              // If no config, use first column as label
+              cellContent = totalsConfig?.labelText ?? 'TOTAL';
+            } else if (isTotalCol) {
+              const total = totals[col.id];
+              cellContent = total !== undefined && total !== null 
+                ? (typeof total === 'number' && total % 1 !== 0 ? total.toFixed(2) : total)
+                : '';
+            }
 
-              return (
-                <td
-                  key={col.id}
-                  style={{
-                    ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
-                    fontWeight: 'bold',
-                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                  }}
-                >
-                  {cellContent}
-                </td>
-              );
-            })}
-          </tr>
-        )}
+            return (
+              <td
+                key={col.id}
+                style={{
+                  ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
+                  fontWeight: 'bold',
+                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                }}
+              >
+                {cellContent}
+              </td>
+            );
+          })}
+        </tr>
 
-        {/* Average Row */}
-        {totalsEnabled && totalsConfig?.showAverage && (
-          <tr style={{ fontStyle: 'italic', backgroundColor: 'rgba(0, 0, 0, 0.02)' }}>
-            {visibleCols.map(col => {
-              const isAverageCol = sumColumnIds.includes(col.id);
-              const isLabelCol = col.id === (totalsConfig?.averageLabelColumnId ?? totalsConfig?.labelColumnId);
-              let cellContent: React.ReactNode = '';
+        {/* Average Row - Always shown */}
+        <tr style={{ fontStyle: 'italic', backgroundColor: 'rgba(0, 0, 0, 0.02)', pageBreakInside: 'avoid' }}>
+          {visibleCols.map((col, idx) => {
+            const isAverageCol = sumColumnIds.length > 0 ? sumColumnIds.includes(col.id) : !col.id.toLowerCase().includes('subject') && !col.id.toLowerCase().includes('name');
+            const isFirstCol = idx === 0;
+            let cellContent: React.ReactNode = '';
 
-              if (isLabelCol) {
-                cellContent = totalsConfig?.averageLabelText ?? 'AVERAGE';
-              } else if (isAverageCol) {
-                const average = averages[col.id];
-                cellContent = average !== undefined && average !== null 
-                  ? (typeof average === 'number' && average % 1 !== 0 ? average.toFixed(2) : average)
-                  : '';
-              }
+            if (isFirstCol && sumColumnIds.length === 0) {
+              // If no config, use first column as label
+              cellContent = totalsConfig?.averageLabelText ?? 'AVERAGE';
+            } else if (isAverageCol) {
+              const average = averages[col.id];
+              cellContent = average !== undefined && average !== null 
+                ? (typeof average === 'number' && average % 1 !== 0 ? average.toFixed(2) : average)
+                : '';
+            }
 
-              return (
-                <td
-                  key={col.id}
-                  style={{
-                    ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
-                    fontStyle: 'italic',
-                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                  }}
-                >
-                  {cellContent}
-                </td>
-              );
-            })}
-          </tr>
-        )}
+            return (
+              <td
+                key={col.id}
+                style={{
+                  ...resolveTableDataCellStyle(style, col.align, totalsConfig?.rowStyle),
+                  fontStyle: 'italic',
+                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                }}
+              >
+                {cellContent}
+              </td>
+            );
+          })}
+        </tr>
       </tbody>
     </table>
   );
