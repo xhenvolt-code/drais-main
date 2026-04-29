@@ -873,6 +873,14 @@ const ReportsPage = () => {
   }
   
   function commentsForGrade(grade: string) {
+    // Nursery grades (A-D)
+    if (grade === 'A') return 'Outstanding performance! Excellent work.';
+    if (grade === 'B') return 'Very good work! Keep up the great effort.';
+    if (grade === 'C') return 'Good progress! Continue working hard.';
+    if (grade === 'D') return 'Needs more effort. Please work harder.';
+    if (grade === 'E') return 'Requires significant improvement. Seek extra help.';
+
+    // Standard grades (D1, D2, C3, etc.)
     if (grade === 'D1') return 'Excellent results, keep it up.';
     if (grade === 'D2') return 'Very good score, but aim at excellency.';
     if (grade === 'C3') return 'Satisfactory performance, please work harder.';
