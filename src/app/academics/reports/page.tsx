@@ -460,6 +460,23 @@ const ReportsPage = () => {
         return; // Skip invalid class names
       }
 
+      // Find the student record to validate class consistency
+      const studentRecord = allStudents.find(s => s.student_id === r.student_id);
+      const studentClassName = studentRecord?.class_name;
+
+      // Strict validation: only include results where the result's class_name matches the student's actual class
+      if (studentClassName && String(studentClassName).toLowerCase().trim() !== String(className).toLowerCase().trim()) {
+        // Log for debugging - this will help identify contaminated data
+        console.warn(`Class mismatch for student ${r.student_id} (${r.first_name} ${r.last_name}): result shows "${className}" but student record shows "${studentClassName}". Skipping this result.`);
+        return; // Skip results with class mismatch
+      }
+
+      // Additional validation: ensure result has valid academic year and term data
+      if (!r.academic_year_id || (!r.term && !r.term_name)) {
+        console.warn(`Missing academic context for student ${r.student_id} (${r.first_name} ${r.last_name}) in ${className}. Skipping this result.`);
+        return; // Skip results without proper academic context
+      }
+
       if (!groups[className]) {
         groups[className] = { className, students: [] };
       }
@@ -508,7 +525,15 @@ const ReportsPage = () => {
         Object.entries(groups).filter(([className, v]) => {
           if (!v || !Array.isArray(v.students)) return false;
           // Strict class matching: only include groups where the class name exactly matches
-          return String(className || '').toLowerCase().trim() === targetClass;
+          const groupClass = String(className || '').toLowerCase().trim();
+          const matches = groupClass === targetClass;
+
+          // Log for Northgate debugging
+          if (targetClass.includes('top') && groupClass !== targetClass) {
+            console.log(`Filtering out class "${groupClass}" for top class filter - only "${targetClass}" allowed`);
+          }
+
+          return matches;
         })
       );
     }
@@ -517,7 +542,25 @@ const ReportsPage = () => {
       if (!g || !Array.isArray(g.students)) return;
 
       // First, filter students to only include those whose class_name matches the group class
-      g.students = g.students.filter(s => s && String(s.class_name || '').toLowerCase().trim() === String(g.className).toLowerCase().trim());
+      const initialCount = g.students.length;
+      g.students = g.students.filter(s => {
+        if (!s) return false;
+        const studentClass = String(s.class_name || '').toLowerCase().trim();
+        const groupClass = String(g.className).toLowerCase().trim();
+        const matches = studentClass === groupClass;
+
+        // Log mismatches for debugging (especially for top class)
+        if (!matches && groupClass.includes('top')) {
+          console.warn(`Removing student ${s.student_id} (${s.first_name} ${s.last_name}) from top class: student class "${studentClass}" doesn't match group class "${groupClass}"`);
+        }
+
+        return matches;
+      });
+
+      // Log student count changes for top class debugging
+      if (String(g.className).toLowerCase().includes('top') && initialCount !== g.students.length) {
+        console.log(`Top class "${g.className}": filtered from ${initialCount} to ${g.students.length} students`);
+      }
 
       g.students = g.students.filter(s => {
         if (!s || !Array.isArray(s.results)) return false;
@@ -531,7 +574,10 @@ const ReportsPage = () => {
             const matchesAY = s.results.some((r: Result) =>
               r && String(r.academic_year_id || '') === filters.academicYearId
             );
-            if (!matchesAY) return false;
+            if (!matchesAY) {
+              console.log(`Student ${s.student_id} (${s.first_name} ${s.last_name}) filtered out: no results for academic year ${filters.academicYearId}`);
+              return false;
+            }
           }
         }
         
@@ -587,6 +633,18 @@ const ReportsPage = () => {
     
     // Remove empty classes
     groups = Object.fromEntries(Object.entries(groups).filter(([_, v]) => v && Array.isArray(v.students) && v.students.length > 0));
+
+    // Final logging for top class debugging
+    Object.entries(groups).forEach(([className, group]) => {
+      if (String(className).toLowerCase().includes('top')) {
+        console.log(`Northgate top class "${className}" final count: ${group.students.length} students`);
+        // Log student details for verification
+        group.students.forEach((student, index) => {
+          console.log(`  ${index + 1}. ${student.first_name} ${student.last_name} (ID: ${student.student_id}, Class: ${student.class_name})`);
+        });
+      }
+    });
+
     return groups;
   }, [classGroups, filters]);
 
@@ -1395,9 +1453,7 @@ const ReportsPage = () => {
                       aggregates: isNursery ? null : (aggregates || null),
                       division: isNursery ? (nurseryOverallGrade || null) : (division || null),
                       totalStudents: student.totalInClass ?? null,
-                      position: (student.position && student.totalInClass)
-                        ? `${student.position} / ${student.totalInClass}`
-                        : (student.position ? String(student.position) : null),
+                      position: student.position ? String(student.position) : null,
                     },
                     comments: (() => {
                       const divComments = getCommentsByDivision(

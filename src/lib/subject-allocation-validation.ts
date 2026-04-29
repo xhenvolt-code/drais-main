@@ -71,7 +71,7 @@ export async function isSubjectAllocatedToClass(
     const [rows]: any = await connection.execute(
       `SELECT cs.id
        FROM class_subjects cs
-       WHERE cs.class_id = ? AND cs.subject_id = ? AND cs.deleted_at IS NULL
+       WHERE cs.class_id = ? AND cs.subject_id = ?
        LIMIT 1`,
       [classId, subjectId]
     );

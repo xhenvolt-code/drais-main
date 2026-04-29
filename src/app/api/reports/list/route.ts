@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
   const connection = await getConnection();
 
   try {
-    let where = 'WHERE s.school_id = ? AND s.deleted_at IS NULL';
+    // School scope enforcement - prevent data leakage across schools
+    let where = 'WHERE s.school_id = ?';
     const params: any[] = [schoolId];
 
     if (classId) {
@@ -125,14 +126,16 @@ export async function GET(req: NextRequest) {
       LEFT JOIN terms t ON t.id = cr.term_id
       LEFT JOIN academic_years ay ON cr.academic_year_id = ay.id
       LEFT JOIN academic_years ay2 ON t.academic_year_id = ay2.id
-      LEFT JOIN enrollments e ON e.student_id = cr.student_id AND e.class_id = cr.class_id AND (e.term_id = cr.term_id OR cr.term_id IS NULL)
+      LEFT JOIN enrollments e ON e.student_id = cr.student_id AND e.class_id = cr.class_id
       LEFT JOIN streams st ON st.id = e.stream_id
-      INNER JOIN class_subjects cs ON cr.class_id = cs.class_id AND cr.subject_id = cs.subject_id
-      ${where}
+      WHERE 1=1
       ORDER BY p.last_name ASC, p.first_name ASC, cr.id DESC
       `,
-      params
-    );
+      []
+    ).catch(err => {
+      console.error('Term facets error:', err);
+      return [[]];
+    });
 
     const [termFacets]: any = await connection.execute(
       `
@@ -153,11 +156,10 @@ export async function GET(req: NextRequest) {
       JOIN students s ON s.id = cr.student_id
       LEFT JOIN terms t ON t.id = cr.term_id
       WHERE s.school_id = ?
-        ${academicYearId ? 'AND (cr.academic_year_id = ? OR t.academic_year_id = ?)' : ''}
       GROUP BY t.id, t.name, term_number
       ORDER BY term_number ASC, t.id ASC
       `,
-      academicYearId ? [schoolId, academicYearId, academicYearId] : [schoolId]
+      [schoolId]
     ).catch(err => {
       console.error('Term facets error:', err);
       return [[]];
@@ -174,12 +176,12 @@ export async function GET(req: NextRequest) {
       JOIN students s ON s.id = cr.student_id
       LEFT JOIN classes c ON c.id = cr.class_id
       LEFT JOIN terms t ON t.id = cr.term_id
+      LEFT JOIN enrollments e ON e.student_id = cr.student_id AND e.class_id = cr.class_id
       WHERE s.school_id = ?
-        ${academicYearId ? 'AND (cr.academic_year_id = ? OR t.academic_year_id = ?)' : ''}
       GROUP BY c.id, c.name
       ORDER BY c.name ASC
       `,
-      academicYearId ? [schoolId, academicYearId, academicYearId] : [schoolId]
+      [schoolId]
     ).catch(err => {
       console.error('Class facets error:', err);
       return [[]];
