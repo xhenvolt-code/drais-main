@@ -12,8 +12,22 @@ export async function GET(req: NextRequest) {
     [session.schoolId]
   );
 
-  // Default fallback date for Northgate school: 25th May 2026
-  const defaultDate = '2026-05-25';
+  // Get school-specific fallback dates
+  const schoolRows = await query(
+    `SELECT name FROM schools WHERE id = ?`,
+    [session.schoolId]
+  );
+
+  const schoolName = schoolRows[0]?.name?.toLowerCase() || '';
+
+  // School-specific fallback dates
+  let defaultDate = '2026-05-25'; // Default fallback
+  if (schoolName.includes('northgate')) {
+    defaultDate = '2026-05-25'; // 25th May 2026 for Northgate
+  } else if (schoolName.includes('albayan')) {
+    defaultDate = '2026-06-01'; // 1st June 2026 for Albayan
+  }
+
   return ok('Next term date fetched', { nextTermBegins: rows[0]?.value_text || defaultDate });
 }
 

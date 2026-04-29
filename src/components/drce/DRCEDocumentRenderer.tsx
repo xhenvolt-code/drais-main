@@ -59,7 +59,7 @@ function renderSection(
     case 'grade_table':  return <GradeTableSection  key={section.id} section={section} theme={theme} ctx={enhancedDataCtx} />;
     case 'spacer':       return <SpacerSection      key={section.id} section={section} />;
     case 'divider':      return <DividerSection     key={section.id} section={section} />;
-    case 'next_term_begins': return <NextTermBeginsSection key={section.id} section={section} />;
+    case 'next_term_begins': return <NextTermBeginsSection key={section.id} section={section} nextTermBegins={dataCtx.meta.nextTermBegins} />;
     default:
       console.warn(`Unknown section type: ${(section as any).type}`);
       return null;

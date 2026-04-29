@@ -1172,7 +1172,7 @@ function NextTermBeginsPanel({ section, onMutate }: { section: DRCESection & { t
               setContent('customDate', value);
             }}
             className="w-full text-xs border border-gray-200 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-800"
-            placeholder="Leave blank for 25th May 2026"
+            placeholder="Leave blank for school-specific default date"
           />
         </Row>
       </PanelSection>

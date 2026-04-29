@@ -608,12 +608,13 @@ export interface DRCEMetaContext {
   schoolEmail: string;
   centerNo: string;
   registrationNo: string;
-  arabicName: string | null;
-  arabicAddress: string | null;
-  logoUrl: string | null;
+  arabicName?: string | null;
+  arabicAddress?: string | null;
+  logoUrl?: string | null;
   term: string;
   year: string;
   reportTitle: string;
+  nextTermBegins?: string;
 }
 
 export type Language = 'en' | 'ar';

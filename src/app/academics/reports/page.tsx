@@ -1312,6 +1312,12 @@ const ReportsPage = () => {
                 // ── Phase 9: Unified DRCE rendering (all templates now DRCE documents)
                 if (activeDrceDoc) {
                   const drceData: DRCEDataContext = {
+                    subjects: allGroupedResults.map(r => ({
+                      id: r.subject_id || 0,
+                      name: r.subject_name,
+                      totalMarks: 100, // Default, could be made configurable later
+                      subjectType: (r.subject_type || 'core').toLowerCase() === 'core' ? 'primary' : 'secondary',
+                    })),
                     student: {
                       fullName: `${student.first_name} ${student.last_name}`,
                       firstName: student.first_name,
@@ -1415,6 +1421,7 @@ const ReportsPage = () => {
                       logoUrl: schoolInfo.logo_url || null,
                       term: editableTermValue || filters.term || '',
                       year: '',
+                      nextTermBegins: nextTermBegins,
                       reportTitle: [
                         (principal[0]?.result_type_name || principal[0]?.results_type || 'MID TERM')
                           .toUpperCase(),
