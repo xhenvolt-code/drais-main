@@ -12,7 +12,9 @@ export async function GET(req: NextRequest) {
     [session.schoolId]
   );
 
-  return ok('Next term date fetched', { nextTermBegins: rows[0]?.value_text || '' });
+  // Default fallback date for Northgate school: 25th May 2026
+  const defaultDate = '2026-05-25';
+  return ok('Next term date fetched', { nextTermBegins: rows[0]?.value_text || defaultDate });
 }
 
 export async function POST(req: NextRequest) {
