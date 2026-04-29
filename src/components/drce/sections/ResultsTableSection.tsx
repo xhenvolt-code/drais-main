@@ -115,6 +115,7 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
     return sum + (subject?.totalMarks ?? 100);
   }, 0);
   const percentage = totalPossible > 0 ? (totalObtained / totalPossible) * 100 : 0;
+  const averageScore = results.length > 0 ? totalObtained / results.length : 0;
 
   // Validate subject totals
   const validationErrors: string[] = [];
@@ -208,7 +209,17 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
               let cellContent: React.ReactNode = '';
 
               if (isFirstCol) {
-                cellContent = totalsConfig?.labelText ?? 'TOTAL';
+                // Show TOTAL and AVERAGE in the first column
+                let displayText = totalsConfig?.labelText ?? 'TOTAL';
+                if (totalsConfig?.showAverage) {
+                  displayText += ` ${totalObtained.toFixed(1)}`;
+                  if (results.length > 0) {
+                    displayText += `    AVERAGE: ${averageScore.toFixed(1)}`;
+                  }
+                } else {
+                  displayText += ` ${totalObtained.toFixed(1)}`;
+                }
+                cellContent = displayText;
               } else if (col.id.toLowerCase().includes('score') || col.id.toLowerCase().includes('total')) {
                 // Show total obtained in score columns
                 if (totalsConfig?.showTotalObtained !== false) {
@@ -227,7 +238,7 @@ export function ResultsTableSection({ section, ctx, onCellChange }: Props) {
               } else if (col.header.toLowerCase().includes('average')) {
                 // Show average in average columns
                 if (totalsConfig?.showAverage) {
-                  cellContent = (totalObtained / results.length).toFixed(1);
+                  cellContent = averageScore.toFixed(1);
                 }
               }
 

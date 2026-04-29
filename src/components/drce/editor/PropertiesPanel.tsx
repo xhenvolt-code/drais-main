@@ -1163,7 +1163,15 @@ function NextTermBeginsPanel({ section, onMutate }: { section: DRCESection & { t
     <div className="p-3 space-y-4">
       <PanelSection title="Content">
         <Row label="Text"><TextInput value={content.text} onChange={v => setContent('text', v)} placeholder="Next term begins" /></Row>
-        <Row label="Custom Date"><TextInput value={content.customDate || ''} onChange={v => setContent('customDate', v)} placeholder="e.g., May 10, 2026 (leave blank for auto-date)" /></Row>
+        <Row label="Custom Date">
+          <input
+            type="date"
+            value={content.customDate || ''}
+            onChange={e => setContent('customDate', e.target.value)}
+            className="w-full text-xs border border-gray-200 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-800"
+            placeholder="Leave blank for auto-date"
+          />
+        </Row>
       </PanelSection>
       <PanelSection title="Style">
         <Row label="Background"><ColorInput value={style.background || '#e0f2fe'} onChange={v => set('background', v)} /></Row>
