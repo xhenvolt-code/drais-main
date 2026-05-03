@@ -220,7 +220,7 @@ export default function RptPage() {
         </div>
 
         {/* ── NEXT TERM DATE ── */}
-        <p style={{ margin: '10px 0' }}>...... 22-May-2023 ......</p>
+        <p style={{ margin: '10px 0' }}>...... 25-May-2026 ......</p>
         <p style={{ fontSize: 11, margin: 0 }}>Next Term Begins</p>
 
         {/* ── GRADE SCALE ── */}

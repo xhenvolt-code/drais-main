@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير المدرسة الطارئ</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; color: #333; direction: rtl; }
+        .report-container { width: 800px; margin: auto; border: 1px solid #ccc; padding: 10px; }
+        @page { size: A4; margin: 1cm; }
+
+        /* Header Logic */
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        .school-name { font-size: 20px; color: #000080; font-weight: bold; margin: 0; text-align: center; }
+        .school-info { font-size: 12px; font-weight: bold; font-style: italic; margin: 2px 0; text-align: center; }
+
+        /* Banner */
+        .blue-banner { background: #09a12a; color: white; text-align: center; padding: 5px; font-weight: bold; letter-spacing: 2px; margin: 5px 0; }
+
+        /* Student Info Section */
+        .student-info-table { width: 100%; border-collapse: collapse; border: 1px dashed #999; margin-bottom: 10px; }
+        .info-label { color: #555; font-size: 11px; text-align: right; }
+        .info-value { color: #0066cc; font-weight: bold; font-size: 14px; text-transform: uppercase; text-align: right; }
+
+        /* Tables */
+        .results-table { width: 100%; border-collapse: collapse; margin-top: -1px; }
+        .results-table th, .results-table td { border: 1px solid #333; padding: 4px; text-align: center; }
+        .results-table th { background: #f2f2f2; text-transform: uppercase; font-size: 11px; }
+        .comment-cell { text-align: right !important; font-style: italic; color: #09a12a; font-size: 11px; width: 40%; }
+        .initials { color: #09a12a; font-weight: bold; }
+
+        /* Remarks Section Labels */
+        .remark-row { display: flex; align-items: flex-start; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; }
+        .remark-text { margin-right: 10px; font-style: italic; color: #09a12a; font-size: 13px; text-align: right; }
+
+        /* Grade Scale Footer */
+        .grade-scale { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .grade-scale td { border: 1px solid #000; text-align: center; padding: 3px; font-size: 10px; }
+        .grade-header { background: #f2f2f2; font-weight: bold; }
+
+        /* Print styles */
+        @media print {
+            .report-container { page-break-after: always; }
+            .no-print { display: none; }
+            body { font-size: 10px; zoom: 90%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+
+    <table class="header-table">
+        <tr>
+            <td style="text-align: center; padding-bottom: 10px;">
+                <img src="/albayan-Photoroom1.png" alt="School Logo" style="height: 70px; object-fit: contain; margin-bottom: 8px;">
+                <h1 class="school-name">Albayan Quran Memorization Centre Nursery and Primary School</h1>
+                <p class="school-info">Bugumba<br>مركز البيان لتحفيظ القرآن الكريم الروضة والابتدائية</p>
+                <p style="font-style: italic; font-weight: bold; font-size: 12px; text-align: center;">من خلال التعليم</p>
+            </td>
+        </tr>
+    </table>
+
+    <div class="blue-banner">تقرير الفصل الأول</div>
+
+    <table class="student-info-table">
+        <tr>
+            <td>
+                <table width="100%" cellpadding="5">
+                    <tr>
+                        <td><span class="info-label">الاسم:</span><br><span class="info-value">{{student_name}}</span></td>
+                        <td><span class="info-label">الجنس:</span><br><span class="info-value">{{gender}}</span></td>
+                        <td><span class="info-label">الصف:</span><br><span class="info-value">{{class_name}}</span></td>
+                        <td><span class="info-label">التيار:</span><br><span class="info-value">{{stream_name}}</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="info-label">رقم الطالب:</span><br><span class="info-value" style="font-size: 12px;">{{student_no}}</span></td>
+                        <td colspan="3"><span class="info-label">الفصل:</span><br><span class="info-value" style="font-size: 12px;">الفصل الأول 2026</span></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+            </td>
+        </tr>
+    </table>
+
+    <div style="text-align: center; margin: 10px 0;">
+        <svg width="600" height="50" viewBox="0 0 600 50">
+            <polygon points="0,5 600,5 600,30 315,30 300,45 285,30 0,30" fill="#999" />
+            <text x="300" y="22" font-family="Arial" font-size="12" fill="black" text-anchor="middle" font-weight="bold">
+                المواد الرئيسية المكونة للتقييم العام
+            </text>
+        </svg>
+    </div>
+
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>المادة</th>
+                <th>نهاية الفصل</th>
+                <th>المجموع</th>
+                <th style="color:red">الدرجة</th>
+                <th>تعليق</th>
+                <th>الحروف الأولى</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>تساهم العلامات:</td><td>100</td><td>100</td><td></td><td></td><td></td></tr>
+            {{#subjects}}
+            <tr><td>{{subject_name}}</td><td>{{score}}</td><td>{{total}}</td><td style="color:red">{{grade}}</td><td class="comment-cell">{{remarks}}</td><td class="initials">BJM</td></tr>
+            {{/subjects}}
+            <tr style="font-weight:bold; background:#f9f9f9">
+                <td align="right">إجمالي العلامات:</td><td colspan="2">{{total_marks}}</td>
+                <td colspan="2" align="left">متوسط العلامات:</td><td>{{average_marks}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="text-align: center; margin: 10px 0;">
+        <svg width="600" height="50" viewBox="0 0 600 50">
+            <polygon points="0,5 600,5 600,30 315,30 300,45 285,30 0,30" fill="#999" />
+            <text x="300" y="22" font-family="Arial" font-size="12" fill="black" text-anchor="middle" font-weight="bold">
+                مواد أخرى (غير جزء من التقييم)
+            </text>
+        </svg>
+    </div>
+
+    <table class="results-table">
+        <tr>
+            <td width="25%">تساهم العلامات:</td><td width="10%">100</td><td></td><td></td><td></td><td></td>
+        </tr>
+        <!-- Additional subjects if any -->
+    </table>
+
+    <table class="results-table" style="margin-top: 10px;">
+        <tr style="background: #f2f2f2; font-weight: bold;">
+            <td colspan="2">المركز</td>
+            <td colspan="4">التقييم العام</td>
+        </tr>
+        <tr>
+            <td width="16%">الصف</td><td width="16%">التيار</td><td width="33%" colspan="2">المجاميع</td><td width="33%" colspan="2">القسم</td>
+        </tr>
+        <tr style="color: red; font-weight: bold;">
+            <td>{{class_position}} / {{class_total}}</td><td>{{stream_position}} / {{stream_total}}</td><td colspan="2">{{aggregates}}</td><td colspan="2">{{division}}</td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 20px;">
+        <div class="remark-row">
+            <svg width="150" height="25">
+                <polygon points="0,0 130,0 150,12.5 130,25 0,25" fill="#ddd" />
+                <text x="130" y="17" font-size="11" font-weight="bold" text-anchor="end">تعليق معلم الصف:</text>
+            </svg>
+            <span class="remark-text">{{class_teacher_comment}}</span>
+        </div>
+        <div class="remark-row">
+            <svg width="150" height="25">
+                <polygon points="0,0 130,0 150,12.5 130,25 0,25" fill="#ddd" />
+                <text x="130" y="17" font-size="11" font-weight="bold" text-anchor="end">تعليق مدير الدراسات:</text>
+            </svg>
+            <span class="remark-text">{{dos_comment}}</span>
+        </div>
+        <div class="remark-row">
+            <svg width="150" height="25">
+                <polygon points="0,0 130,0 150,12.5 130,25 0,25" fill="#ddd" />
+                <text x="130" y="17" font-size="11" font-weight="bold" text-anchor="end">تعليق مدير المدرسة:</text>
+            </svg>
+            <span class="remark-text">{{headteacher_comment}}</span>
+        </div>
+    </div>
+
+    <p style="margin: 10px 0; text-align: center;">...... {{next_term_date}} ......</p>
+    <p style="font-size: 11px; margin: 0; text-align: center;">يبدأ الفصل التالي</p>
+
+    <table class="grade-scale">
+        <tr class="grade-header">
+            <td>الدرجة</td><td>D1</td><td>D2</td><td>C3</td><td>C4</td><td>C5</td><td>C6</td><td>P7</td><td>P8</td><td>F9</td>
+        </tr>
+        <tr>
+            <td>نطاق النتيجة</td><td>90-100</td><td>80-89</td><td>70-79</td><td>60-69</td><td>55-59</td><td>50-54</td><td>45-49</td><td>40-44</td><td>0-39</td>
+        </tr>
+    </table>
+
+</div>
+
+</body>
+</html>

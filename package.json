@@ -59,7 +59,7 @@
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.541.0",
     "multer": "^2.0.2",
-    "mysql2": "^3.14.3",
+    "mysql2": "^3.22.3",
     "next": "^15.5.12",
     "next-auth": "^4.24.11",
     "next-i18next": "^15.4.2",

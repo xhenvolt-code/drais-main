@@ -16,18 +16,33 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      classId,
-      academicYearId,
-      termId,
+      sourceClassId,
+      sourceAcademicYearId,
+      sourceTermId,
       sourceSubjectId,
+      sourceResultTypeId,
+      destinationClassId,
+      destinationAcademicYearId,
+      destinationTermId,
       destinationSubjectId,
-      resultTypeId,
+      destinationResultTypeId,
       conflictResolution,
       reason
     } = body;
 
     // Validation
-    if (!classId || !academicYearId || !termId || !sourceSubjectId || !destinationSubjectId || !resultTypeId) {
+    if (
+      !sourceClassId ||
+      !sourceAcademicYearId ||
+      !sourceTermId ||
+      !sourceSubjectId ||
+      !sourceResultTypeId ||
+      !destinationClassId ||
+      !destinationAcademicYearId ||
+      !destinationTermId ||
+      !destinationSubjectId ||
+      !destinationResultTypeId
+    ) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -44,12 +59,16 @@ export async function POST(req: NextRequest) {
     // Execute migration
     const result = await executeMigration({
       schoolId: session.schoolId,
-      classId,
-      academicYearId,
-      termId,
+      sourceClassId,
+      sourceAcademicYearId,
+      sourceTermId,
       sourceSubjectId,
+      sourceResultTypeId,
+      destinationClassId,
+      destinationAcademicYearId,
+      destinationTermId,
       destinationSubjectId,
-      resultTypeId,
+      destinationResultTypeId,
       conflictResolution,
       confirmedBy: session.userId,
       reason

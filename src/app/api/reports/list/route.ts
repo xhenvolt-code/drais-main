@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN academic_years ay2 ON t.academic_year_id = ay2.id
       LEFT JOIN enrollments e ON e.student_id = cr.student_id AND e.class_id = cr.class_id
       LEFT JOIN streams st ON st.id = e.stream_id
-      WHERE 1=1
+      ${where}
       ORDER BY p.last_name ASC, p.first_name ASC, cr.id DESC
       `,
       []

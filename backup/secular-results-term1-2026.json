@@ -1,0 +1,1681 @@
+{
+  "term": "Term 1 2026",
+  "classes": [
+    {
+        "className": "PRIMARY FOUR",
+        "subjects": [
+            "MTC",
+            "ENG",
+            "SCI",
+            "SST",
+            "ICT"
+        ],
+        "students": [
+            {
+                "id": "P4/001/2026",
+                "name": "NAMUWAYA AMINA",
+                "results": [
+                    {
+                        "subject": "MTC",
+                        "score": 74,
+                        "grade": "C",
+                        "initials": "K.L"
+                    },
+                    {
+                        "subject": "ENG",
+                        "score": 64,
+                        "grade": "D",
+                        "initials": "I.R"
+                    },
+                    {
+                        "subject": "SCI",
+                        "score": 60,
+                        "grade": "D",
+                        "initials": "I.R"
+                    },
+                    {
+                        "subject": "SST",
+                        "score": 44,
+                        "grade": "E",
+                        "initials": "N.M"
+                    },
+                    {
+                        "subject": "ICT",
+                        "score": 32,
+                        "grade": "E",
+                        "initials": "N.M"
+                    }
+                ],
+                "total": "274",
+                "average": "55",
+                "position": "1/1",
+                "remarks": "Needs Improvement"
+            }
+        ]
+    },
+    {
+      "className": "MIDDLE CLASS",
+      "subjects": [
+        "NUMBERS",
+        "S.D",
+        "R.w",
+        "r.w",
+        "Health Habits"
+      ],
+      "students": [
+        {
+          "id": "SEC001",
+          "name": "UTHMAN, ADEN",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "99",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "487",
+          "average": "97",
+          "position": "1/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC002",
+          "name": "SUDAIS, BUMBO",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "482",
+          "average": "96",
+          "position": "2/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC003",
+          "name": "MWASE, HAMZA MUHAMMAD",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": null,
+              "grade": "N/A",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": null,
+              "grade": "N/A",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": null,
+              "grade": "N/A",
+              "initials": "N.M"
+            }
+          ],
+          "total": "192",
+          "average": "96",
+          "position": "3/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC004",
+          "name": "HASHIM, BAKAKI",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "470",
+          "average": "94",
+          "position": "4/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC005",
+          "name": "AFRINA, MUNULO",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "490",
+          "average": "98",
+          "position": "5/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC006",
+          "name": "SHAZIMINA, NAMAGEMBE",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "488",
+          "average": "98",
+          "position": "6/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC007",
+          "name": "NABIHA, NAMUKWAYA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "488",
+          "average": "98",
+          "position": "7/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC008",
+          "name": "SHATURAH, NAMUWAYA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "482",
+          "average": "96",
+          "position": "8/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC009",
+          "name": "ALEYA RAMADHAN, WESIGE",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "490",
+          "average": "98",
+          "position": "9/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC010",
+          "name": "RASHIQ, MUKISA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "480",
+          "average": "96",
+          "position": "10/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC011",
+          "name": "HADIJJA, KYAKUTEMA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "97",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "477",
+          "average": "95",
+          "position": "11/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC012",
+          "name": "HADIJJA, NABANAKULYA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "97",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "465",
+          "average": "93",
+          "position": "12/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC013",
+          "name": "HAFIZU, WAISWA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "91",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "459",
+          "average": "92",
+          "position": "13/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC014",
+          "name": "HAMZA, AALIYAH",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "99",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "459",
+          "average": "92",
+          "position": "14/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC015",
+          "name": "MUKUNGU, MUHSIN",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "97",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "457",
+          "average": "91",
+          "position": "15/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC016",
+          "name": "AZED RAIF, MULINDA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "458",
+          "average": "92",
+          "position": "16/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC017",
+          "name": "RAFIQ, MUWANGUZI",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "458",
+          "average": "92",
+          "position": "17/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC018",
+          "name": "FATUMA, NAMUGANZA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "452",
+          "average": "90",
+          "position": "18/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC019",
+          "name": "ABDUL RAZAK, NYOMBI",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "100",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "460",
+          "average": "92",
+          "position": "19/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC020",
+          "name": "DIDI, RIHAN",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "450",
+          "average": "90",
+          "position": "20/20",
+          "remarks": "Very Good Performance"
+        }
+      ]
+    },
+    {
+      "className": "BABY CLASS",
+      "subjects": [
+        "NUMBERS",
+        "S.D",
+        "R.w",
+        "r.w",
+        "Health Habits"
+      ],
+      "students": [
+        {
+          "id": "SEC001",
+          "name": "UTHMAN, ADEN",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "99",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "487",
+          "average": "97",
+          "position": "1/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC002",
+          "name": "SUDAIS, BUMBO",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "482",
+          "average": "96",
+          "position": "2/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC003",
+          "name": "MWASE, HAMZA MUHAMMAD",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": null,
+              "grade": "N/A",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": null,
+              "grade": "N/A",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": null,
+              "grade": "N/A",
+              "initials": "N.M"
+            }
+          ],
+          "total": "192",
+          "average": "96",
+          "position": "3/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC004",
+          "name": "HASHIM, BAKAKI",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "470",
+          "average": "94",
+          "position": "4/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC005",
+          "name": "AFRINA, MUNULO",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "490",
+          "average": "98",
+          "position": "5/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC006",
+          "name": "SHAZIMINA, NAMAGEMBE",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "488",
+          "average": "98",
+          "position": "6/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC007",
+          "name": "NABIHA, NAMUKWAYA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "488",
+          "average": "98",
+          "position": "7/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC008",
+          "name": "SHATURAH, NAMUWAYA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "482",
+          "average": "96",
+          "position": "8/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC009",
+          "name": "ALEYA RAMADHAN, WESIGE",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "490",
+          "average": "98",
+          "position": "9/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC010",
+          "name": "RASHIQ, MUKISA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "96",
+              "grade": "Excellent",
+              "initials": "N.M"
+            }
+          ],
+          "total": "480",
+          "average": "96",
+          "position": "10/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC011",
+          "name": "HADIJJA, KYAKUTEMA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "97",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "95",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "477",
+          "average": "95",
+          "position": "11/20",
+          "remarks": "Excellent Performance"
+        },
+        {
+          "id": "SEC012",
+          "name": "HADIJJA, NABANAKULYA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "97",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "465",
+          "average": "93",
+          "position": "12/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC013",
+          "name": "HAFIZU, WAISWA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "91",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "459",
+          "average": "92",
+          "position": "13/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC014",
+          "name": "HAMZA, AALIYAH",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "99",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "459",
+          "average": "92",
+          "position": "14/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC015",
+          "name": "MUKUNGU, MUHSIN",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "97",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "457",
+          "average": "91",
+          "position": "15/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC016",
+          "name": "AZED RAIF, MULINDA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "458",
+          "average": "92",
+          "position": "16/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC017",
+          "name": "RAFIQ, MUWANGUZI",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "458",
+          "average": "92",
+          "position": "17/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC018",
+          "name": "FATUMA, NAMUGANZA",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "92",
+              "grade": "Very Good",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "452",
+          "average": "90",
+          "position": "18/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC019",
+          "name": "ABDUL RAZAK, NYOMBI",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "100",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "90",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "460",
+          "average": "92",
+          "position": "19/20",
+          "remarks": "Very Good Performance"
+        },
+        {
+          "id": "SEC020",
+          "name": "DIDI, RIHAN",
+          "results": [
+            {
+              "subject": "NUMBERS",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "I. R"
+            },
+            {
+              "subject": "S.D",
+              "score": "98",
+              "grade": "Excellent",
+              "initials": "K. L"
+            },
+            {
+              "subject": "R.w",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "r.w",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "I.R"
+            },
+            {
+              "subject": "Health Habits",
+              "score": "88",
+              "grade": "Very Good",
+              "initials": "N.M"
+            }
+          ],
+          "total": "450",
+          "average": "90",
+          "position": "20/20",
+          "remarks": "Very Good Performance"
+        }
+      ]
+    }
+  ]
+}

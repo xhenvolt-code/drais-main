@@ -1955,54 +1955,7 @@ const ReportsPage = () => {
             </div>
           ))}
         </div>
-        
-        {/* Customization Modal - Enhanced layout and controls */}
-        {showCustomization && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 relative overflow-y-auto max-h-[90vh] mx-4">
-              <button className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors text-xl" onClick={() => setShowCustomization(false)}>&times;</button>
-              <h2 className="text-xl font-bold mb-4">Customize Report Style</h2>
-              <div className="mb-4 flex gap-1 border-b border-gray-200">
-                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='school'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('school')}>School</button>
-                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='banner'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('banner')}>Banners</button>
-                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='table'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('table')}>Tables</button>
-                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='comment'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('comment')}>Comments</button>
-                <button className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${customTab==='other'?'border-b-2 border-blue-600 text-blue-600 bg-blue-50':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`} onClick={()=>setCustomTab('other')}>Other</button>
-              </div>
-              <form>
-                {customTab==='school' && (
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block font-semibold mb-1">School Name</label>
-                      <input type="text" className="w-full border rounded px-2 py-1" name="school_name" placeholder="School Name" />
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">School Badge/Logo</label>
-                      <input type="file" className="w-full border rounded px-2 py-1" name="school_logo_file" accept="image/*" />
-                    </div>
-                  </div>
-                )}
-                {/* Add other customization tabs content as needed */}
-                <div className="flex justify-end gap-2 mt-6">
-                  <button
-                    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                    type="button"
-                    onClick={() => setShowCustomization(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
-                    type="button"
-                    onClick={() => setShowCustomization(false)}
-                  >
-                    Apply Changes
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+       
         <style jsx global>{`
           .no-print {
             display: block;

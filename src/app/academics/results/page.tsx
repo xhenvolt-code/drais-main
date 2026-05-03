@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Settings2, GraduationCap, BookOpen, ArrowRightLeft } from 'lucide-react';
-import Button from '@/components/ui/Button.jsx';
+import { Button } from '@/components/ui/Button';
 import ResultTypesManager from '@/components/academics/ResultTypesManager';
 import ClassResultsManager from '@/components/academics/ClassResultsManager';
 import TheologyResultsManager from '@/components/academics/TheologyResultsManager';
@@ -111,7 +111,7 @@ export default function ResultsPage() {
             className="text-xs"
           >
             <ArrowRightLeft className="w-3.5 h-3.5 mr-1.5" />
-            Migrate Marks
+            Migrate Results
           </Button>
         )}
       </div>

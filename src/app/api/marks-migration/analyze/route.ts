@@ -16,25 +16,46 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      classId,
-      academicYearId,
-      termId,
+      sourceClassId,
+      sourceAcademicYearId,
+      sourceTermId,
       sourceSubjectId,
+      sourceResultTypeId,
+      destinationClassId,
+      destinationAcademicYearId,
+      destinationTermId,
       destinationSubjectId,
-      resultTypeId
+      destinationResultTypeId
     } = body;
 
     // Validation
-    if (!classId || !academicYearId || !termId || !sourceSubjectId || !destinationSubjectId || !resultTypeId) {
+    if (
+      !sourceClassId ||
+      !sourceAcademicYearId ||
+      !sourceTermId ||
+      !sourceSubjectId ||
+      !sourceResultTypeId ||
+      !destinationClassId ||
+      !destinationAcademicYearId ||
+      !destinationTermId ||
+      !destinationSubjectId ||
+      !destinationResultTypeId
+    ) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
 
-    if (sourceSubjectId === destinationSubjectId) {
+    if (
+      sourceClassId === destinationClassId &&
+      sourceAcademicYearId === destinationAcademicYearId &&
+      sourceTermId === destinationTermId &&
+      sourceSubjectId === destinationSubjectId &&
+      sourceResultTypeId === destinationResultTypeId
+    ) {
       return NextResponse.json(
-        { error: 'Source and destination subjects must be different' },
+        { error: 'Source and destination cannot be identical' },
         { status: 400 }
       );
     }
@@ -42,12 +63,16 @@ export async function POST(req: NextRequest) {
     // Perform analysis
     const analysis = await analyzeMigration({
       schoolId: session.schoolId,
-      classId,
-      academicYearId,
-      termId,
+      sourceClassId,
+      sourceAcademicYearId,
+      sourceTermId,
       sourceSubjectId,
+      sourceResultTypeId,
+      destinationClassId,
+      destinationAcademicYearId,
+      destinationTermId,
       destinationSubjectId,
-      resultTypeId
+      destinationResultTypeId
     });
 
     return NextResponse.json({

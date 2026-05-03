@@ -1,0 +1,7 @@
+Bro today my business is at risk, you see I took drais online but it is now costing me more than the offline version:
+Look theology results were entered earlier on and drais see them clearly but reports do not render ie they do not show
+I I met the headteacher of Al Bayan, he is so disappointed reason being tomorrow is the day of giving report cards, parents come in the morning, 
+and system failed him he even has no option since it is 4 hours away, I asked him for the 4 hrs to generate all the 600 reports for him meaning I must have the ability to write and fill more than 100 reports every hour
+something nearly impossible for a human, take note of the fact that it is midnight and I am alone meaning no one I can call to help me, word has crashed and I have no recovery system for that since installing it is another hour and even if alternatives still the same and drais already failed, 
+I was thinking of hard coding reports if possible I create a route in drais and i hardcode all the reports ie one template and a loop through a json file of all results ie I wanted ai agent to get for me all the theology results from the system, put in the 
+json file and then duplicate ie design a similar reports route but this uses hard coded json information ie just a loop to create all reports at once

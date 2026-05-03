@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from '@/components/ui/Modal';
-import Button from '@/components/ui/Button.jsx';
+import { Button } from '@/components/ui/Button';
 import {
   Select,
   SelectContent,
@@ -26,12 +26,16 @@ interface MigrationWizardProps {
 type WizardStep = 'selection' | 'preview' | 'resolution' | 'confirmation';
 
 interface SelectionState {
-  academicYearId: string;
-  termId: string;
-  classId: string;
+  sourceAcademicYearId: string;
+  sourceTermId: string;
+  sourceClassId: string;
   sourceSubjectId: string;
+  sourceResultTypeId: string;
+  destinationAcademicYearId: string;
+  destinationTermId: string;
+  destinationClassId: string;
   destinationSubjectId: string;
-  resultTypeId: string;
+  destinationResultTypeId: string;
 }
 
 interface MigrationAnalysis {
@@ -54,12 +58,16 @@ export function MarksMigrationWizard({
 }: MigrationWizardProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('selection');
   const [selection, setSelection] = useState<SelectionState>({
-    academicYearId: '',
-    termId: '',
-    classId: '',
+    sourceAcademicYearId: '',
+    sourceTermId: '',
+    sourceClassId: '',
     sourceSubjectId: '',
+    sourceResultTypeId: '',
+    destinationAcademicYearId: '',
+    destinationTermId: '',
+    destinationClassId: '',
     destinationSubjectId: '',
-    resultTypeId: ''
+    destinationResultTypeId: ''
   });
   
   const [analysis, setAnalysis] = useState<MigrationAnalysis | null>(null);
@@ -68,14 +76,34 @@ export function MarksMigrationWizard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!open) {
+      setCurrentStep('selection');
+      setAnalysis(null);
+      setError(null);
+      setReason('');
+      setConflictResolution('skip');
+    }
+  }, [open]);
+
   const isSelectionValid =
-    selection.academicYearId &&
-    selection.termId &&
-    selection.classId &&
+    selection.sourceAcademicYearId &&
+    selection.sourceTermId &&
+    selection.sourceClassId &&
     selection.sourceSubjectId &&
+    selection.sourceResultTypeId &&
+    selection.destinationAcademicYearId &&
+    selection.destinationTermId &&
+    selection.destinationClassId &&
     selection.destinationSubjectId &&
-    selection.resultTypeId &&
-    selection.sourceSubjectId !== selection.destinationSubjectId;
+    selection.destinationResultTypeId &&
+    !(
+      selection.sourceAcademicYearId === selection.destinationAcademicYearId &&
+      selection.sourceTermId === selection.destinationTermId &&
+      selection.sourceClassId === selection.destinationClassId &&
+      selection.sourceSubjectId === selection.destinationSubjectId &&
+      selection.sourceResultTypeId === selection.destinationResultTypeId
+    );
 
   const handleAnalyze = async () => {
     setLoading(true);
@@ -86,12 +114,16 @@ export function MarksMigrationWizard({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          classId: parseInt(selection.classId),
-          academicYearId: parseInt(selection.academicYearId),
-          termId: parseInt(selection.termId),
+          sourceClassId: parseInt(selection.sourceClassId),
+          sourceAcademicYearId: parseInt(selection.sourceAcademicYearId),
+          sourceTermId: parseInt(selection.sourceTermId),
           sourceSubjectId: parseInt(selection.sourceSubjectId),
+          sourceResultTypeId: parseInt(selection.sourceResultTypeId),
+          destinationClassId: parseInt(selection.destinationClassId),
+          destinationAcademicYearId: parseInt(selection.destinationAcademicYearId),
+          destinationTermId: parseInt(selection.destinationTermId),
           destinationSubjectId: parseInt(selection.destinationSubjectId),
-          resultTypeId: parseInt(selection.resultTypeId)
+          destinationResultTypeId: parseInt(selection.destinationResultTypeId)
         })
       });
 
@@ -119,12 +151,16 @@ export function MarksMigrationWizard({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          classId: parseInt(selection.classId),
-          academicYearId: parseInt(selection.academicYearId),
-          termId: parseInt(selection.termId),
+          sourceClassId: parseInt(selection.sourceClassId),
+          sourceAcademicYearId: parseInt(selection.sourceAcademicYearId),
+          sourceTermId: parseInt(selection.sourceTermId),
           sourceSubjectId: parseInt(selection.sourceSubjectId),
+          sourceResultTypeId: parseInt(selection.sourceResultTypeId),
+          destinationClassId: parseInt(selection.destinationClassId),
+          destinationAcademicYearId: parseInt(selection.destinationAcademicYearId),
+          destinationTermId: parseInt(selection.destinationTermId),
           destinationSubjectId: parseInt(selection.destinationSubjectId),
-          resultTypeId: parseInt(selection.resultTypeId),
+          destinationResultTypeId: parseInt(selection.destinationResultTypeId),
           conflictResolution,
           reason
         })
@@ -153,7 +189,7 @@ export function MarksMigrationWizard({
     <Modal
       isOpen={open}
       onClose={() => onOpenChange(false)}
-      title="Migrate Subject Marks"
+      title="Migrate Results"
       size="lg"
     >
       <div className="space-y-6 py-4">
@@ -183,120 +219,206 @@ export function MarksMigrationWizard({
         {currentStep === 'selection' && (
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Step 1: Select Migration Parameters</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Academic Year</label>
-                <Select
-                  value={selection.academicYearId}
-                  onValueChange={(v) => setSelection({...selection, academicYearId: v})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {academicYears.map(y => (
-                      <SelectItem key={y.id} value={y.id.toString()}>
-                        {y.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="space-y-4 rounded-lg border border-slate-200 p-4 bg-slate-50">
+                <h4 className="font-semibold">Source</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Academic Year</label>
+                    <Select
+                      value={selection.sourceAcademicYearId}
+                      onValueChange={(v) => setSelection({...selection, sourceAcademicYearId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {academicYears.map(y => (
+                          <SelectItem key={y.id} value={y.id.toString()}>
+                            {y.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Term</label>
+                    <Select
+                      value={selection.sourceTermId}
+                      onValueChange={(v) => setSelection({...selection, sourceTermId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select term" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {terms.map(t => (
+                          <SelectItem key={t.id} value={t.id.toString()}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Class</label>
+                    <Select
+                      value={selection.sourceClassId}
+                      onValueChange={(v) => setSelection({...selection, sourceClassId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classes.map(c => (
+                          <SelectItem key={c.id} value={c.id.toString()}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Result Type</label>
+                    <Select
+                      value={selection.sourceResultTypeId}
+                      onValueChange={(v) => setSelection({...selection, sourceResultTypeId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resultTypes.map(r => (
+                          <SelectItem key={r.id} value={r.id.toString()}>
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-2">Subject</label>
+                    <Select
+                      value={selection.sourceSubjectId}
+                      onValueChange={(v) => setSelection({...selection, sourceSubjectId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select source subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjects.map(s => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Term</label>
-                <Select
-                  value={selection.termId}
-                  onValueChange={(v) => setSelection({...selection, termId: v})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select term" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {terms.map(t => (
-                      <SelectItem key={t.id} value={t.id.toString()}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="space-y-4 rounded-lg border border-slate-200 p-4 bg-slate-50">
+                <h4 className="font-semibold">Destination</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Academic Year</label>
+                    <Select
+                      value={selection.destinationAcademicYearId}
+                      onValueChange={(v) => setSelection({...selection, destinationAcademicYearId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {academicYears.map(y => (
+                          <SelectItem key={y.id} value={y.id.toString()}>
+                            {y.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Class</label>
-                <Select
-                  value={selection.classId}
-                  onValueChange={(v) => setSelection({...selection, classId: v})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classes.map(c => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Term</label>
+                    <Select
+                      value={selection.destinationTermId}
+                      onValueChange={(v) => setSelection({...selection, destinationTermId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select term" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {terms.map(t => (
+                          <SelectItem key={t.id} value={t.id.toString()}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Result Type</label>
-                <Select
-                  value={selection.resultTypeId}
-                  onValueChange={(v) => setSelection({...selection, resultTypeId: v})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {resultTypes.map(r => (
-                      <SelectItem key={r.id} value={r.id.toString()}>
-                        {r.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Class</label>
+                    <Select
+                      value={selection.destinationClassId}
+                      onValueChange={(v) => setSelection({...selection, destinationClassId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classes.map(c => (
+                          <SelectItem key={c.id} value={c.id.toString()}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">FROM Subject (Wrong)</label>
-                <Select
-                  value={selection.sourceSubjectId}
-                  onValueChange={(v) => setSelection({...selection, sourceSubjectId: v})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map(s => (
-                      <SelectItem key={s.id} value={s.id.toString()}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Result Type</label>
+                    <Select
+                      value={selection.destinationResultTypeId}
+                      onValueChange={(v) => setSelection({...selection, destinationResultTypeId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resultTypes.map(r => (
+                          <SelectItem key={r.id} value={r.id.toString()}>
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">TO Subject (Correct)</label>
-                <Select
-                  value={selection.destinationSubjectId}
-                  onValueChange={(v) => setSelection({...selection, destinationSubjectId: v})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select destination" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map(s => (
-                      <SelectItem key={s.id} value={s.id.toString()}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-2">Subject</label>
+                    <Select
+                      value={selection.destinationSubjectId}
+                      onValueChange={(v) => setSelection({...selection, destinationSubjectId: v})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select destination subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjects.map(s => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

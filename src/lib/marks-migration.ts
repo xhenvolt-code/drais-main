@@ -22,12 +22,16 @@ import { logAudit, AuditAction } from '@/lib/audit';
 
 export interface MigrationAnalysisParams {
   schoolId: number;
-  classId: number;
-  academicYearId: number;
-  termId: number;
+  sourceClassId: number;
+  sourceAcademicYearId: number;
+  sourceTermId: number;
   sourceSubjectId: number;
+  sourceResultTypeId: number;
+  destinationClassId: number;
+  destinationAcademicYearId: number;
+  destinationTermId: number;
   destinationSubjectId: number;
-  resultTypeId: number;
+  destinationResultTypeId: number;
 }
 
 export interface LearnerMarkPreview {
@@ -73,11 +77,14 @@ export interface MigrationAuditRecord {
   schoolId: number;
   performedBy: number;
   action: 'MIGRATED_MARKS' | 'ROLLED_BACK_MIGRATION';
-  classId: number;
+  sourceClassId: number;
   sourceSubjectId: number;
+  sourceAcademicYearId: number;
+  sourceTermId: number;
+  destinationClassId: number;
   destinationSubjectId: number;
-  academicYearId: number;
-  termId: number;
+  destinationAcademicYearId: number;
+  destinationTermId: number;
   recordsAffected: number;
   conflictResolution: string;
   timestamp: string;
@@ -113,7 +120,7 @@ export async function analyzeMigration(
         AND e.academic_year_id = ?
         AND e.status = 'active'
       ORDER BY p.first_name, p.last_name`,
-      [params.classId, params.academicYearId]
+      [params.sourceClassId, params.sourceAcademicYearId]
     ) as any[];
 
     const learnerPreviews: LearnerMarkPreview[] = [];
@@ -130,13 +137,15 @@ export async function analyzeMigration(
            AND class_id = ?
            AND subject_id = ?
            AND term_id = ?
-           AND academic_year_id = ?`,
+           AND academic_year_id = ?
+           AND result_type_id = ?`,
         [
           learner.student_id,
-          params.classId,
+          params.sourceClassId,
           params.sourceSubjectId,
-          params.termId,
-          params.academicYearId
+          params.sourceTermId,
+          params.sourceAcademicYearId,
+          params.sourceResultTypeId
         ]
       ) as any[];
 
@@ -147,13 +156,15 @@ export async function analyzeMigration(
            AND class_id = ?
            AND subject_id = ?
            AND term_id = ?
-           AND academic_year_id = ?`,
+           AND academic_year_id = ?
+           AND result_type_id = ?`,
         [
           learner.student_id,
-          params.classId,
+          params.destinationClassId,
           params.destinationSubjectId,
-          params.termId,
-          params.academicYearId
+          params.destinationTermId,
+          params.destinationAcademicYearId,
+          params.destinationResultTypeId
         ]
       ) as any[];
 
@@ -241,12 +252,14 @@ export async function executeMigration(
          AND cr.subject_id = ?
          AND cr.term_id = ?
          AND cr.academic_year_id = ?
+         AND cr.result_type_id = ?
          AND cr.score IS NOT NULL`,
       [
-        request.classId,
+        request.sourceClassId,
         request.sourceSubjectId,
-        request.termId,
-        request.academicYearId
+        request.sourceTermId,
+        request.sourceAcademicYearId,
+        request.sourceResultTypeId
       ]
     ) as any[];
 
@@ -261,13 +274,15 @@ export async function executeMigration(
            AND class_id = ?
            AND subject_id = ?
            AND term_id = ?
-           AND academic_year_id = ?`,
+           AND academic_year_id = ?
+           AND result_type_id = ?`,
         [
           mark.student_id,
-          request.classId,
+          request.destinationClassId,
           request.destinationSubjectId,
-          request.termId,
-          request.academicYearId
+          request.destinationTermId,
+          request.destinationAcademicYearId,
+          request.destinationResultTypeId
         ]
       ) as any[];
 
@@ -287,11 +302,11 @@ export async function executeMigration(
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               [
                 mark.student_id,
-                request.classId,
+                request.destinationClassId,
                 request.destinationSubjectId,
-                request.termId,
-                request.academicYearId,
-                request.resultTypeId,
+                request.destinationTermId,
+                request.destinationAcademicYearId,
+                request.destinationResultTypeId,
                 mark.score,
                 mark.grade,
                 mark.remarks || `Migrated from source subject on ${new Date().toISOString()}`
@@ -338,11 +353,11 @@ export async function executeMigration(
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             mark.student_id,
-            request.classId,
+            request.destinationClassId,
             request.destinationSubjectId,
-            request.termId,
-            request.academicYearId,
-            request.resultTypeId,
+            request.destinationTermId,
+            request.destinationAcademicYearId,
+            request.destinationResultTypeId,
             mark.score,
             mark.grade,
             mark.remarks || `Migrated from source subject on ${new Date().toISOString()}`
@@ -369,12 +384,20 @@ export async function executeMigration(
         request.confirmedBy,
         'MIGRATED_MARKS',
         'marks_migration',
-        request.classId,
+        request.sourceClassId,
         JSON.stringify({
           migrationId,
           transactionId,
+          sourceClassId: request.sourceClassId,
+          sourceAcademicYearId: request.sourceAcademicYearId,
+          sourceTermId: request.sourceTermId,
           sourceSubjectId: request.sourceSubjectId,
+          sourceResultTypeId: request.sourceResultTypeId,
+          destinationClassId: request.destinationClassId,
+          destinationAcademicYearId: request.destinationAcademicYearId,
+          destinationTermId: request.destinationTermId,
           destinationSubjectId: request.destinationSubjectId,
+          destinationResultTypeId: request.destinationResultTypeId,
           recordsMigrated,
           conflictsResolved,
           skipped,
@@ -398,11 +421,11 @@ export async function executeMigration(
         migrationId,
         transactionId,
         request.schoolId,
-        request.classId,
+        request.sourceClassId,
         request.sourceSubjectId,
         request.destinationSubjectId,
-        request.academicYearId,
-        request.termId,
+        request.sourceAcademicYearId,
+        request.sourceTermId,
         recordsMigrated,
         conflictsResolved,
         skipped,

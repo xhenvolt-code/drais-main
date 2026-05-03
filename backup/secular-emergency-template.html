@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <title>Emergency School Report - Secular Subjects</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; color: #333; direction: ltr; }
+        .report-container { width: 800px; margin: auto; border: 1px solid #ccc; padding: 10px; }
+        @page { size: A4; margin: 1cm; }
+
+        /* Header Logic */
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        .school-name { font-size: 20px; color: #000080; font-weight: bold; margin: 0; text-align: center; }
+        .school-info { font-size: 12px; font-weight: bold; font-style: italic; margin: 2px 0; text-align: center; }
+
+        /* Banner */
+        .blue-banner { background: #09a12a; color: white; text-align: center; padding: 5px; font-weight: bold; letter-spacing: 2px; margin: 5px 0; }
+
+        /* Student Info Section */
+        .student-info-table { width: 100%; border-collapse: collapse; border: 1px dashed #999; margin-bottom: 10px; }
+        .info-label { color: #555; font-size: 11px; text-align: left; }
+        .info-value { color: #0066cc; font-weight: bold; font-size: 14px; text-transform: uppercase; text-align: left; }
+
+        /* Tables */
+        .results-table { width: 100%; border-collapse: collapse; margin-top: -1px; }
+        .results-table th, .results-table td { border: 1px solid #333; padding: 4px; text-align: center; }
+        .results-table th { background: #f2f2f2; text-transform: uppercase; font-size: 11px; }
+        .comment-cell { text-align: left !important; font-style: italic; color: #09a12a; font-size: 11px; width: 40%; }
+        .initials { color: #09a12a; font-weight: bold; }
+
+        /* Remarks Section Labels */
+        .remark-row { display: flex; align-items: flex-start; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; }
+        .remark-text { margin-left: 10px; font-style: italic; color: #09a12a; font-size: 13px; text-align: left; }
+
+        /* Grade Scale Footer */
+        .grade-scale { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .grade-scale td { border: 1px solid #000; text-align: center; padding: 3px; font-size: 10px; }
+        .grade-header { background: #f2f2f2; font-weight: bold; }
+
+        /* Print styles */
+        @media print {
+            .report-container { page-break-after: always; }
+            .no-print { display: none; }
+            body { font-size: 10px; zoom: 90%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+
+    <table class="header-table">
+        <tr>
+            <td style="text-align: center; padding-bottom: 10px;">
+                <img src="/albayan-Photoroom1.png" alt="School Logo" style="height: 70px; object-fit: contain; margin-bottom: 8px;">
+                <h1 class="school-name">Albayan Quran Memorization Centre Nursery and Primary School</h1>
+                <p class="school-info">Bugumba<br>Emergency Secular Subjects Report</p>
+                <p style="font-style: italic; font-weight: bold; font-size: 12px; text-align: center;">Education Through Excellence</p>
+            </td>
+        </tr>
+    </table>
+
+    <div class="blue-banner">FIRST TERM REPORT</div>
+
+    <table class="student-info-table">
+        <tr>
+            <td>
+                <table width="100%" cellpadding="5">
+                    <tr>
+                        <td><span class="info-label">NAME:</span><br><span class="info-value">{{student_name}}</span></td>
+                        <td><span class="info-label">GENDER:</span><br><span class="info-value">{{gender}}</span></td>
+                        <td><span class="info-label">CLASS:</span><br><span class="info-value">{{class_name}}</span></td>
+                        <td><span class="info-label">STREAM:</span><br><span class="info-value">{{stream_name}}</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="info-label">STUDENT NUMBER:</span><br><span class="info-value" style="font-size: 12px;">{{student_no}}</span></td>
+                        <td colspan="3"><span class="info-label">TERM:</span><br><span class="info-value" style="font-size: 12px;">First Term 2026</span></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div style="text-align: center; margin: 10px 0;">
+        <svg width="600" height="50" viewBox="0 0 600 50">
+            <polygon points="0,5 600,5 600,30 315,30 300,45 285,30 0,30" fill="#999" />
+            <text x="300" y="22" font-family="Arial" font-size="12" fill="black" text-anchor="middle" font-weight="bold">
+                MAIN SUBJECTS ASSESSMENT
+            </text>
+        </svg>
+    </div>
+
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>SUBJECT</th>
+                <th>MARKS</th>
+                <th>TOTAL</th>
+                <th>GRADE</th>
+                <th>REMARKS</th>
+                <th>INITIAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#subjects}}
+            {{/subjects}}
+        </tbody>
+    </table>
+
+    <table width="100%" cellpadding="8" style="margin-top: 10px;">
+        <tr style="font-weight:bold; background:#f9f9f9">
+            <td style="text-align:left;"><span style="color: #0066cc;">TOTAL MARKS:</span> <span style="color: #0066cc; font-size: 16px;">{{total_marks}}</span></td>
+            <td style="text-align:left;"><span style="color: #0066cc;">AVERAGE:</span> <span style="color: #0066cc; font-size: 16px;">{{average_marks}}</span></td>
+        </tr>
+    </table>
+
+    <!-- Remarks Section -->
+    <div style="margin-top: 15px; margin-bottom: 15px; border-top: 2px solid #ccc; padding-top: 10px;">
+        <h4 style="text-align: left; color: #09a12a; margin: 0 0 8px 0;">REMARKS AND COMMENTS</h4>
+        
+        <div class="remark-row">
+            <span class="remark-text">Subject Teacher:</span>
+            <span style="flex: 1; border-bottom: 1px dotted #999;"></span>
+        </div>
+        
+        <div class="remark-row">
+            <span class="remark-text">School Principal:</span>
+            <span style="flex: 1; border-bottom: 1px dotted #999;"></span>
+        </div>
+
+        <div style="margin-top: 10px; text-align: left;">
+            <p style="color: #333; font-size: 11px; margin: 3px 0;">
+                <strong>Subject Teacher Comment:</strong><br>{{class_teacher_comment}}
+            </p>
+            <p style="color: #333; font-size: 11px; margin: 3px 0;">
+                <strong>School Principal Comment:</strong><br>{{headteacher_comment}}
+            </p>
+        </div>
+    </div>
+
+    <!-- Next Term Info -->
+    <div style="text-align: center; border-top: 2px solid #09a12a; padding-top: 8px; margin-top: 15px;">
+        <p style="color: #09a12a; font-weight: bold; font-size: 12px;">NEXT TERM: {{next_term_date}}</p>
+    </div>
+
+</div>
+
+</body>
+</html>
