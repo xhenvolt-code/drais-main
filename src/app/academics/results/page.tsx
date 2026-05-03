@@ -1,16 +1,18 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Settings2, GraduationCap, BookOpen, ArrowRightLeft } from 'lucide-react';
+import { Settings2, GraduationCap, BookOpen, ArrowRightLeft, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import ResultTypesManager from '@/components/academics/ResultTypesManager';
 import ClassResultsManager from '@/components/academics/ClassResultsManager';
 import TheologyResultsManager from '@/components/academics/TheologyResultsManager';
 import { MarksMigrationWizard } from '@/components/academics/MarksMigrationWizard';
+import ResultsImportSystem from '@/components/academics/ResultsImportSystem';
 
 const tabs = [
   { id: 'result-types',      label: 'Result Types',      icon: Settings2 },
   { id: 'secular-results',   label: 'Academic Results',   icon: GraduationCap },
   { id: 'theology-results',  label: 'Theology Results',   icon: BookOpen },
+  { id: 'import-results',    label: 'Import Results',     icon: Upload },
 ];
 
 interface WizardData {
@@ -34,6 +36,10 @@ export default function ResultsPage() {
   const [loadingWizardData, setLoadingWizardData] = useState(false);
 
   // Load wizard data when component mounts or modal opens
+  useEffect(() => {
+    loadWizardData(); // Load data on mount
+  }, []);
+
   useEffect(() => {
     if (migrationOpen && wizardData.academicYears.length === 0) {
       console.log('[Migration] Opening modal, loading data...');
@@ -121,6 +127,7 @@ export default function ResultsPage() {
         {activeTab === 0 && <div className="p-4"><ResultTypesManager /></div>}
         {activeTab === 1 && <ClassResultsManager academicType="secular" />}
         {activeTab === 2 && <TheologyResultsManager />}
+        {activeTab === 3 && <ResultsImportSystem />}
       </div>
 
       {/* Migration Wizard */}

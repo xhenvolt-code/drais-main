@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, Fragment, useMemo, useOptimistic, useTransition } from 'react';
+import React, { useEffect, useState, Fragment, useMemo, useOptimistic, useTransition, useRef } from 'react';
 import { Dialog, Transition, Listbox, Tab } from '@headlessui/react';
 import { X, ChevronsUpDown, Check, Loader2, Save, Table, RefreshCw, Edit3 } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
@@ -24,6 +24,173 @@ const successAnimationStyle = `
     animation: successPulse 0.6s ease-out;
   }
 `;
+
+// Bulk Entry Grid Component
+const BulkEntryGrid: React.FC<{
+  bulkData: any;
+  setBulkData: (data: any) => void;
+  subjects: Option[];
+  classId?: number;
+}> = React.memo(({ bulkData, setBulkData, subjects, classId }) => {
+  const [focusedCell, setFocusedCell] = useState<{ studentId: number; subjectId: number } | null>(null);
+
+  // Filter subjects to only those allocated to the class
+  const classSubjects = React.useMemo(() => subjects.filter(subject => {
+    // In a real implementation, you'd check against class_subjects table
+    // For now, show all subjects
+    return true;
+  }), [subjects]);
+
+  const students = React.useMemo(() => Object.values(bulkData), [bulkData]);
+
+  const updateScore = (studentId: number, subjectId: number, value: string) => {
+    const numValue = value === '' ? null : parseFloat(value);
+    if (numValue !== null && (isNaN(numValue) || numValue < 0 || numValue > 100)) {
+      return; // Invalid score
+    }
+
+    setBulkData((prev: any) => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        scores: {
+          ...prev[studentId].scores,
+          [subjectId]: numValue
+        }
+      }
+    }));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, studentId: number, subjectId: number) => {
+    const currentIndex = students.findIndex((s: any) => s.student_id === studentId);
+    const currentSubjectIndex = classSubjects.findIndex(s => s.id === subjectId);
+
+    let nextStudentId = studentId;
+    let nextSubjectId = subjectId;
+
+    switch (e.key) {
+      case 'ArrowRight':
+        if (currentSubjectIndex < classSubjects.length - 1) {
+          nextSubjectId = classSubjects[currentSubjectIndex + 1].id;
+        }
+        break;
+      case 'ArrowLeft':
+        if (currentSubjectIndex > 0) {
+          nextSubjectId = classSubjects[currentSubjectIndex - 1].id;
+        }
+        break;
+      case 'ArrowDown':
+        if (currentIndex < students.length - 1) {
+          nextStudentId = (students[currentIndex + 1] as any).student_id;
+        }
+        break;
+      case 'ArrowUp':
+        if (currentIndex > 0) {
+          nextStudentId = (students[currentIndex - 1] as any).student_id;
+        }
+        break;
+      case 'Tab':
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (currentSubjectIndex > 0) {
+            nextSubjectId = classSubjects[currentSubjectIndex - 1].id;
+          } else if (currentIndex > 0) {
+            nextStudentId = (students[currentIndex - 1] as any).student_id;
+            nextSubjectId = classSubjects[classSubjects.length - 1].id;
+          }
+        } else {
+          if (currentSubjectIndex < classSubjects.length - 1) {
+            nextSubjectId = classSubjects[currentSubjectIndex + 1].id;
+          } else if (currentIndex < students.length - 1) {
+            nextStudentId = (students[currentIndex + 1] as any).student_id;
+            nextSubjectId = classSubjects[0].id;
+          }
+        }
+        break;
+    }
+
+    if (nextStudentId !== studentId || nextSubjectId !== subjectId) {
+      setFocusedCell({ studentId: nextStudentId, subjectId: nextSubjectId });
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent, studentId: number, subjectId: number) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text');
+    const rows = pasteData.split('\n').map(row => row.split('\t'));
+
+    let currentStudentIndex = students.findIndex((s: any) => s.student_id === studentId);
+    let currentSubjectIndex = classSubjects.findIndex(s => s.id === subjectId);
+
+    rows.forEach((row, rowOffset) => {
+      row.forEach((cell, colOffset) => {
+        const targetStudentIndex = currentStudentIndex + rowOffset;
+        const targetSubjectIndex = currentSubjectIndex + colOffset;
+
+        if (targetStudentIndex < students.length && targetSubjectIndex < classSubjects.length) {
+          const targetStudent = students[targetStudentIndex] as any;
+          const targetSubject = classSubjects[targetSubjectIndex];
+          updateScore(targetStudent.student_id, targetSubject.id, cell.trim());
+        }
+      });
+    });
+  };
+
+  return (
+    <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+      <table className="w-full text-xs">
+        <thead className="bg-slate-50 dark:bg-slate-800">
+          <tr>
+            <th className="sticky left-0 bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 px-3 py-2 text-left font-semibold min-w-[200px]">
+              Student
+            </th>
+            {classSubjects.map(subject => (
+              <th key={subject.id} className="px-3 py-2 text-center font-semibold min-w-[80px]">
+                {subject.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {students.map((student: any, studentIndex) => (
+            <tr key={student.student_id} className={studentIndex % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800'}>
+              <td className="sticky left-0 bg-inherit border-r border-slate-200 dark:border-slate-700 px-3 py-2 font-medium">
+                <div>
+                  <div className="font-semibold">{student.first_name} {student.last_name}</div>
+                  <div className="text-xs text-slate-500">{student.admission_no}</div>
+                </div>
+              </td>
+              {classSubjects.map(subject => {
+                const score = student.scores?.[subject.id];
+                const isFocused = focusedCell?.studentId === student.student_id && focusedCell?.subjectId === subject.id;
+
+                return (
+                  <td key={subject.id} className="px-1 py-1 border-r border-slate-100 dark:border-slate-700">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={score ?? ''}
+                      onChange={(e) => updateScore(student.student_id, subject.id, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, student.student_id, subject.id)}
+                      onPaste={(e) => handlePaste(e, student.student_id, subject.id)}
+                      onFocus={() => setFocusedCell({ studentId: student.student_id, subjectId: subject.id })}
+                      className={`w-full px-2 py-1 text-center border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                        isFocused ? 'ring-2 ring-blue-500' : 'border-transparent hover:border-slate-300'
+                      } ${score !== null && score !== undefined && (score < 0 || score > 100) ? 'border-red-300 bg-red-50' : ''}`}
+                      placeholder="-"
+                    />
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+});
 
 
 interface Option { id:number; name:string; }
@@ -58,9 +225,10 @@ const SelectBox:React.FC<{label:string; value:any; onChange:(v:any)=>void; items
 export default function ClassResultsManager({ academicType = 'secular' }: { academicType?: 'secular' | 'theology' }) {
   const { t } = useTranslation('common');
   const [isPending, startTransition] = useTransition();
-  
+
   const [open,setOpen]=useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false); // New: toggle between single-subject and bulk modes
   const [terms,setTerms]=useState<TermOption[]>([]);
   const [classes,setClasses]=useState<Option[]>([]);
   const [subjects,setSubjects]=useState<Option[]>([]);
@@ -71,6 +239,7 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
   const [rtype,setRtype]=useState<Option|null>(null);
   const [loading,setLoading]=useState(false);
   const [rows,setRows]=useState<StudentRow[]>([]);
+  const [bulkData,setBulkData]=useState<any>({}); // New: for bulk entry mode
   const [saving,setSaving]=useState(false);
   const [message,setMessage]=useState<string>('');
   const [includeMissing,setIncludeMissing]=useState(true);
@@ -242,13 +411,15 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
     });
   };
 
-  const handleOpenModal = () => {
+  const handleOpenModal = (mode: 'single' | 'bulk' = 'single') => {
+    setBulkMode(mode === 'bulk');
     setOpen(true);
     setKlass(classes.find(c => String(c.id) === String(filters.class_id)) || null);
     setSubject(subjects.find(s => String(s.id) === String(filters.subject_id)) || null);
     setRtype(types.find(rt => String(rt.id) === String(filters.result_type_id)) || null);
     setTerm(terms.find(t => String(t.id) === String(filters.term_id)) || null);
     setRows([]);
+    setBulkData({});
   };
 
   const handleFetchMissingRows = () => {
@@ -259,6 +430,55 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
       result_type_id: rtype.id,
       term_id: term?.id || ''
     });
+  };
+
+  const loadBulkData = async () => {
+    if (!klass || !rtype || !term) return;
+    setLoading(true);
+    try {
+      // Get all subjects for this class
+      const classSubjectsRes = await fetch(`${API_BASE}/class-subjects?class_id=${klass.id}&academic_type=${academicType}`);
+      const classSubjects = classSubjectsRes.ok ? await classSubjectsRes.json() : [];
+
+      // Get all students in the class
+      const studentsRes = await fetch(`${API_BASE}/enrollments?class_id=${klass.id}&status=active`);
+      const enrollments = studentsRes.ok ? await studentsRes.json() : [];
+
+      // Get existing results for all subjects
+      const resultsRes = await fetch(`${API_BASE}/class-results/bulk?class_id=${klass.id}&term_id=${term.id}&result_type_id=${rtype.id}&academic_type=${academicType}`);
+      const existingResults = resultsRes.ok ? await resultsRes.json() : [];
+
+      // Structure the data
+      const students = enrollments.data || [];
+      const subjectsList = classSubjects.data || [];
+      const results = existingResults.data || [];
+
+      // Create bulk data structure: { student_id: { subject_id: score, ... }, ... }
+      const data: any = {};
+      students.forEach((student: any) => {
+        data[student.student_id] = {
+          student_id: student.student_id,
+          first_name: student.first_name,
+          last_name: student.last_name,
+          admission_no: student.admission_no,
+          scores: {}
+        };
+      });
+
+      // Populate existing scores
+      results.forEach((result: any) => {
+        if (data[result.student_id]) {
+          data[result.student_id].scores[result.subject_id] = result.score;
+        }
+      });
+
+      setBulkData(data);
+    } catch (error) {
+      console.error('Error loading bulk data:', error);
+      setMessage('Failed to load bulk data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchMissingRows = async (bulkFilters: any) => {
@@ -325,11 +545,11 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       if (!res.ok) {
         throw new Error(`Server error: ${res.status} ${res.statusText}`);
       }
-      
+
       const data = await res.json();
       if (data.error) {
         setMessage(data.error);
@@ -351,6 +571,68 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
       setMessage(e.message || 'Failed to submit results');
       toast.error(e.message || 'Failed to submit results');
       console.error('Error submitting results:', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitBulkResults = async () => {
+    if (!klass || !rtype || !term) return;
+    setSaving(true);
+    setMessage('');
+
+    const entries: any[] = [];
+    Object.values(bulkData).forEach((studentData: any) => {
+      Object.entries(studentData.scores).forEach(([subjectId, score]) => {
+        if (score !== null && score !== undefined && score !== '') {
+          entries.push({
+            student_id: studentData.student_id,
+            subject_id: parseInt(subjectId),
+            score: parseFloat(score.toString()),
+            class_id: klass.id,
+            result_type_id: rtype.id,
+            term_id: term.id,
+            academic_type: academicType
+          });
+        }
+      });
+    });
+
+    const payload = {
+      entries,
+      academic_type: academicType
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/class_results/bulk-submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      if (data.error) {
+        setMessage(data.error);
+        toast.error(data.error);
+      } else {
+        setMessage('✓ Bulk results saved successfully!');
+        setShowSuccessAnimation(true);
+        toast.success(`Bulk results submitted successfully! ${data.inserted || 0} records saved.`);
+        setTimeout(() => {
+          setList([]);
+          setFilters(f => ({ ...f }));
+          setOpen(false);
+          setShowSuccessAnimation(false);
+        }, 800);
+      }
+    } catch (e: any) {
+      setMessage(e.message || 'Failed to submit bulk results');
+      toast.error(e.message || 'Failed to submit bulk results');
+      console.error('Error submitting bulk results:', e);
     } finally {
       setSaving(false);
     }
@@ -749,12 +1031,20 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
 
         <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
-        <button
-          onClick={handleOpenModal}
-          className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-        >
-          {t('add_edit_results')}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleOpenModal('single')}
+            className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+          >
+            {t('add_edit_results')}
+          </button>
+          <button
+            onClick={() => handleOpenModal('bulk')}
+            className="h-8 px-3 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors"
+          >
+            Bulk Entry
+          </button>
+        </div>
 
         <div className="ml-auto flex items-center gap-1.5">
           <span className="text-[10px] text-slate-500 font-medium">{listTotal} results</span>
@@ -925,11 +1215,15 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
                 <div className="sticky top-0 z-40 p-6 border-b border-white/30 dark:border-white/10 bg-gradient-to-r from-white/95 to-white/90 dark:from-slate-900/95 dark:to-slate-900/90 backdrop-blur-xl">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">{t('class_results_entry')}</h2>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Enter scores for each student across all subjects</p>
+                      <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                        {bulkMode ? 'Bulk Results Entry' : t('class_results_entry')}
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        {bulkMode ? 'Enter scores for multiple subjects simultaneously' : 'Enter scores for each student across all subjects'}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      {message && <span className={`text-xs font-semibold px-3 py-1 rounded-full ${message==='Saved'?'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300':'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{message}</span>}
+                      {message && <span className={`text-xs font-semibold px-3 py-1 rounded-full ${message.includes('Successfully')?'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300':'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{message}</span>}
                       <button onClick={()=>setOpen(false)} className="group p-2 rounded-lg hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors" aria-label="Close modal"><X className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white"/></button>
                     </div>
                   </div>
@@ -942,12 +1236,14 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       <SelectBox label={t('term')} value={term ?? null} onChange={setTerm} items={terms} placeholder={t('optional')} />
                       <SelectBox label={t('class')} value={klass ?? null} onChange={v=>{setKlass(v);}} items={classes} />
-                      <SelectBox label={t('subject')} value={subject ?? null} onChange={setSubject} items={subjects.filter(s=>!klass || s)} />
+                      {!bulkMode && (
+                        <SelectBox label={t('subject')} value={subject ?? null} onChange={setSubject} items={subjects.filter(s=>!klass || s)} />
+                      )}
                       <SelectBox label={t('result_type')} value={rtype ?? null} onChange={setRtype} items={types} />
                       <div className="flex flex-col justify-end">
                         <button
-                          disabled={!klass||!subject||!rtype||loading}
-                          onClick={handleFetchMissingRows}
+                          disabled={!klass || (!bulkMode && !subject) || !rtype || loading}
+                          onClick={bulkMode ? loadBulkData : handleFetchMissingRows}
                           className="px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-pink-600 text-white disabled:opacity-40 transition-all hover:shadow-lg disabled:cursor-not-allowed"
                         >
                           {loading ? <Loader2 className="w-3 h-3 animate-spin inline mr-1.5" /> : null}
@@ -957,8 +1253,8 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
                     </div>
                   </div>
 
-                  {/* Data Entry Grid (3 columns) */}
-                  {rows.length > 0 && (
+                  {/* Data Entry - Single Subject Mode */}
+                  {!bulkMode && rows.length > 0 && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
@@ -967,8 +1263,8 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {sortedLearners.map((r, rowIdx) => (
-                          <div 
-                            key={`student-${r.student_id}-${rowIdx}`} 
+                          <div
+                            key={`student-${r.student_id}-${rowIdx}`}
                             className={`group relative rounded-lg border transition-all duration-200 ${
                               editingCell?.id === r.student_id ? 'ring-2 ring-indigo-500 border-indigo-300 dark:border-indigo-600 bg-indigo-50/30 dark:bg-indigo-900/20' : 'border-slate-200/60 dark:border-slate-700/60'
                             } ${rowIdx % 2 === 0 ? 'bg-slate-50/40 dark:bg-slate-900/20' : 'bg-white/50 dark:bg-slate-800/30'} p-4 hover:border-indigo-300 dark:hover:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-400 dark:focus-within:ring-indigo-500`}
@@ -978,13 +1274,13 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
                               {r.first_name} {r.last_name}
                             </label>
                             {/* Score Input - Modern Excel Style */}
-                            <input 
-                              type="number" 
-                              step="0.01" 
+                            <input
+                              type="number"
+                              step="0.01"
                               min="0"
                               max="100"
-                              className="w-full px-3 py-2.5 rounded-md bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-600 text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 transition-all text-center" 
-                              value={r.score ?? ''} 
+                              className="w-full px-3 py-2.5 rounded-md bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-600 text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 transition-all text-center"
+                              value={r.score ?? ''}
                               onChange={e=>updateRow(r.student_id,'score', e.target.value===''? null : parseFloat(e.target.value))}
                               onFocus={() => setEditingCell({ id: r.student_id, field: 'score' })}
                               onBlur={() => setEditingCell(null)}
@@ -1003,6 +1299,26 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
                     </div>
                   )}
 
+                  {/* Bulk Entry Grid */}
+                  {bulkMode && Object.keys(bulkData).length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
+                          Bulk Entry — {Object.keys(bulkData).length} Students
+                        </h3>
+                        <div className="text-xs text-slate-500">
+                          Use Tab/Arrow keys to navigate • Ctrl+V to paste from Excel
+                        </div>
+                      </div>
+                      <BulkEntryGrid
+                        bulkData={bulkData}
+                        setBulkData={setBulkData}
+                        subjects={subjects}
+                        classId={klass?.id}
+                      />
+                    </div>
+                  )}
+
                   {/* Loading State */}
                   {loading && (
                     <div className="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
@@ -1014,26 +1330,28 @@ export default function ClassResultsManager({ academicType = 'secular' }: { acad
 
                 {/* Sticky Footer */}
                 <div className="sticky bottom-0 left-0 right-0 z-40 border-t border-white/30 dark:border-white/10 bg-gradient-to-r from-white/95 to-white/90 dark:from-slate-900/95 dark:to-slate-900/90 backdrop-blur-xl p-6 space-y-4">
-                  <label className="flex items-center gap-3 text-xs cursor-pointer group">
-                    <input 
-                      type="checkbox" 
-                      checked={includeMissing} 
-                      onChange={e=>setIncludeMissing(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 dark:text-indigo-500 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-                    /> 
-                    <span className="text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{t('auto_create_null_rows')}</span>
-                  </label>
+                  {!bulkMode && (
+                    <label className="flex items-center gap-3 text-xs cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={includeMissing}
+                        onChange={e=>setIncludeMissing(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 dark:text-indigo-500 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{t('auto_create_null_rows')}</span>
+                    </label>
+                  )}
                   <div className="flex gap-3 pt-2">
-                    <button 
-                      disabled={saving || rows.length===0} 
-                      onClick={submitResults} 
+                    <button
+                      disabled={saving || (bulkMode ? Object.keys(bulkData).length === 0 : rows.length === 0)}
+                      onClick={bulkMode ? submitBulkResults : submitResults}
                       className={`flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-pink-600 text-white hover:shadow-lg hover:scale-105 active:scale-95 disabled:hover:shadow-none disabled:hover:scale-100 ${showSuccessAnimation ? 'success-pulse' : ''}`}
                     >
                       <Save className="w-4 h-4"/>
-                      <span>{saving ? t('saving')+'...' : t('save_results')}</span>
+                      <span>{saving ? (bulkMode ? 'Saving bulk results...' : t('saving')+'...') : (bulkMode ? 'Save Bulk Results' : t('save_results'))}</span>
                     </button>
-                    <button 
-                      onClick={()=>setOpen(false)} 
+                    <button
+                      onClick={()=>setOpen(false)}
                       disabled={saving}
                       className="px-6 py-3 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
