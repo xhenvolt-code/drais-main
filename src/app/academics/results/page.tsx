@@ -34,6 +34,7 @@ export default function ResultsPage() {
     resultTypes: []
   });
   const [loadingWizardData, setLoadingWizardData] = useState(false);
+  const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
 
   // Load wizard data when component mounts or modal opens
   useEffect(() => {
@@ -55,14 +56,20 @@ export default function ResultsPage() {
         fetch('/api/terms'),
         fetch('/api/classes'),
         fetch('/api/subjects'),
-        fetch('/api/result-types')
+        fetch('/api/result_types')
       ]);
 
-      const years = yearsRes.ok ? await yearsRes.json() : [];
-      const terms = termsRes.ok ? await termsRes.json() : [];
-      const classes = classesRes.ok ? await classesRes.json() : [];
-      const subjects = subjectsRes.ok ? await subjectsRes.json() : [];
-      const types = typesRes.ok ? await typesRes.json() : [];
+      const yearsData = yearsRes.ok ? await yearsRes.json() : { data: [] };
+      const termsData = termsRes.ok ? await termsRes.json() : { data: [] };
+      const classesData = classesRes.ok ? await classesRes.json() : { data: [] };
+      const subjectsData = subjectsRes.ok ? await subjectsRes.json() : { data: [] };
+      const typesData = typesRes.ok ? await typesRes.json() : { data: [] };
+
+      const years = Array.isArray(yearsData.data) ? yearsData.data : [];
+      const terms = Array.isArray(termsData.data) ? termsData.data : [];
+      const classes = Array.isArray(classesData.data) ? classesData.data : [];
+      const subjects = Array.isArray(subjectsData.data) ? subjectsData.data : [];
+      const types = Array.isArray(typesData.data) ? typesData.data : [];
 
       setWizardData({
         academicYears: Array.isArray(years) ? years : [],
@@ -114,7 +121,7 @@ export default function ResultsPage() {
               setMigrationOpen(true);
             }}
             disabled={loadingWizardData || wizardData.academicYears.length === 0}
-            className="text-xs"
+            className="text-xs bg-blue-600 dark:bg-blue-950 text-purple-950 dark:text-purple-50 pointer"
           >
             <ArrowRightLeft className="w-3.5 h-3.5 mr-1.5" />
             Migrate Results
@@ -125,7 +132,7 @@ export default function ResultsPage() {
       {/* ── CONTENT (fills remaining space) ─────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 0 && <div className="p-4"><ResultTypesManager /></div>}
-        {activeTab === 1 && <ClassResultsManager academicType="secular" />}
+        {activeTab === 1 && <ClassResultsManager key={resultsRefreshKey} academicType="secular" />}
         {activeTab === 2 && <TheologyResultsManager />}
         {activeTab === 3 && <ResultsImportSystem />}
       </div>
@@ -141,7 +148,8 @@ export default function ResultsPage() {
         resultTypes={wizardData.resultTypes}
         onMigrationComplete={(result) => {
           console.log('Migration complete:', result);
-          // Optionally refresh results
+          // Trigger refresh of results
+          setResultsRefreshKey(prev => prev + 1);
         }}
       />
     </div>

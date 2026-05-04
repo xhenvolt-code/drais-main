@@ -106,6 +106,32 @@ export async function analyzeMigration(
       throw new Error('Source and destination subjects must be different');
     }
 
+    // Check that source and destination are in the same academic type
+    const [sourceAcademicTypeRows] = await connection.execute(
+      `SELECT DISTINCT academic_type FROM class_results
+       WHERE class_id = ? AND subject_id = ? AND academic_year_id = ? AND term_id = ? AND result_type_id = ?
+       LIMIT 1`,
+      [params.sourceClassId, params.sourceSubjectId, params.sourceAcademicYearId, params.sourceTermId, params.sourceResultTypeId]
+    ) as any[];
+
+    if (sourceAcademicTypeRows.length > 0) {
+      const sourceAcademicType = sourceAcademicTypeRows[0].academic_type;
+
+      const [destAcademicTypeRows] = await connection.execute(
+        `SELECT DISTINCT academic_type FROM class_results
+         WHERE class_id = ? AND subject_id = ? AND academic_year_id = ? AND term_id = ? AND result_type_id = ?
+         LIMIT 1`,
+        [params.destinationClassId, params.destinationSubjectId, params.destinationAcademicYearId, params.destinationTermId, params.destinationResultTypeId]
+      ) as any[];
+
+      if (destAcademicTypeRows.length > 0) {
+        const destAcademicType = destAcademicTypeRows[0].academic_type;
+        if (sourceAcademicType !== destAcademicType) {
+          throw new Error(`Cannot migrate between different academic types: ${sourceAcademicType} → ${destAcademicType}`);
+        }
+      }
+    }
+
     // Get all learners in the class
     const [learnersRows] = await connection.execute(
       `SELECT DISTINCT 
@@ -246,14 +272,14 @@ export async function executeMigration(
 
     // Get all learners with source marks
     const [learnerMarksRows] = await connection.execute(
-      `SELECT cr.id, cr.student_id, cr.score, cr.grade, cr.remarks
-       FROM class_results cr
-       WHERE cr.class_id = ?
-         AND cr.subject_id = ?
-         AND cr.term_id = ?
-         AND cr.academic_year_id = ?
-         AND cr.result_type_id = ?
-         AND cr.score IS NOT NULL`,
+      `SELECT cr.id, cr.student_id, cr.score, cr.grade, cr.remarks, cr.academic_type
+        FROM class_results cr
+        WHERE cr.class_id = ?
+          AND cr.subject_id = ?
+          AND cr.term_id = ?
+          AND cr.academic_year_id = ?
+          AND cr.result_type_id = ?
+          AND cr.score IS NOT NULL`,
       [
         request.sourceClassId,
         request.sourceSubjectId,
@@ -298,8 +324,8 @@ export async function executeMigration(
             // Fall through to insert
             await connection.execute(
               `INSERT INTO class_results
-               (student_id, class_id, subject_id, term_id, academic_year_id, result_type_id, score, grade, remarks)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (student_id, class_id, subject_id, term_id, academic_year_id, result_type_id, score, grade, remarks, academic_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               [
                 mark.student_id,
                 request.destinationClassId,
@@ -309,7 +335,8 @@ export async function executeMigration(
                 request.destinationResultTypeId,
                 mark.score,
                 mark.grade,
-                mark.remarks || `Migrated from source subject on ${new Date().toISOString()}`
+                mark.remarks || `Migrated from source subject on ${new Date().toISOString()}`,
+                mark.academic_type
               ]
             );
             conflictsResolved++;
@@ -349,8 +376,8 @@ export async function executeMigration(
         // No conflict: insert into destination subject
         await connection.execute(
           `INSERT INTO class_results
-           (student_id, class_id, subject_id, term_id, academic_year_id, result_type_id, score, grade, remarks)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (student_id, class_id, subject_id, term_id, academic_year_id, result_type_id, score, grade, remarks, academic_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             mark.student_id,
             request.destinationClassId,
@@ -360,7 +387,8 @@ export async function executeMigration(
             request.destinationResultTypeId,
             mark.score,
             mark.grade,
-            mark.remarks || `Migrated from source subject on ${new Date().toISOString()}`
+            mark.remarks || `Migrated from source subject on ${new Date().toISOString()}`,
+            mark.academic_type
           ]
         );
         recordsMigrated++;

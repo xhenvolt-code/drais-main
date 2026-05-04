@@ -11,6 +11,7 @@ import {
   SelectValue
 } from '@/components/ui/Select';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface MigrationWizardProps {
   open: boolean;
@@ -38,12 +39,23 @@ interface SelectionState {
   destinationResultTypeId: string;
 }
 
+interface LearnerMarkPreview {
+  studentId: number;
+  studentName: string;
+  admissionNo: string;
+  currentSourceMark: number | null;
+  currentDestinationMark: number | null;
+  afterMigrationMark: number | null;
+  hasConflict: boolean;
+  conflictReason?: string;
+}
+
 interface MigrationAnalysis {
   totalLearnersAffected: number;
   learnersWithMarks: number;
   conflictCount: number;
-  conflicts: any[];
-  preview: any[];
+  conflicts: LearnerMarkPreview[];
+  preview: LearnerMarkPreview[];
 }
 
 export function MarksMigrationWizard({
@@ -135,8 +147,11 @@ export function MarksMigrationWizard({
       const data = await response.json();
       setAnalysis(data.analysis);
       setCurrentStep('preview');
+      toast.success('Migration analysis completed successfully');
     } catch (err: any) {
       setError(err.message);
+      toast.error(`Analysis failed: ${err.message}`);
+      console.error('Migration analysis error:', err);
     } finally {
       setLoading(false);
     }
@@ -174,9 +189,12 @@ export function MarksMigrationWizard({
       const data = await response.json();
       onMigrationComplete?.(data.migration);
       setCurrentStep('confirmation');
+      toast.success(`Migration completed successfully! ${data.migration.recordsMigrated} records migrated.`);
       setTimeout(() => onOpenChange(false), 2000);
     } catch (err: any) {
       setError(err.message);
+      toast.error(`Migration failed: ${err.message}`);
+      console.error('Migration execution error:', err);
     } finally {
       setLoading(false);
     }
@@ -443,7 +461,7 @@ export function MarksMigrationWizard({
               </div>
             </div>
 
-            {analysis.preview && analysis.preview.length > 0 && (
+            {analysis.preview && analysis.preview.length > 0 ? (
               <div className="mt-4">
                 <h4 className="font-medium mb-2">Preview</h4>
                 <div className="max-h-64 overflow-y-auto border rounded-lg">
@@ -474,6 +492,11 @@ export function MarksMigrationWizard({
                     </tbody>
                   </table>
                 </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No learners found with marks to migrate.</p>
+                <p className="text-sm mt-1">Please check your selection criteria.</p>
               </div>
             )}
           </div>
@@ -543,7 +566,7 @@ export function MarksMigrationWizard({
           </div>
         )}
 
-        {currentStep === 'confirmation' && (
+        {currentStep === 'confirmation' && analysis && (
           <div className="text-center space-y-4">
             <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
             <div>
@@ -551,6 +574,16 @@ export function MarksMigrationWizard({
               <p className="text-gray-600 text-sm mt-1">
                 Successfully migrated marks from {sourceSubjectName} to {destSubjectName}
               </p>
+              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="font-medium text-green-800">Records Migrated</p>
+                  <p className="text-2xl font-bold text-green-600">{analysis.totalLearnersAffected}</p>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="font-medium text-blue-800">Conflicts Resolved</p>
+                  <p className="text-2xl font-bold text-blue-600">{analysis.conflictCount}</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
